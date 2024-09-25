@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  django:
+    build: .
+    container_name: django
+    command: >
+      sh -c "python3 manage.py migrate &&
+             python3 manage.py runserver 0.0.0.0:8000 &&
+             python3 manage.py process_tasks"
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=${DEBUG}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+    depends_on:
+      - pgdb
+      - background_tasks
+    env_file:
+      - .env
+
+  background_tasks:
+    build: .
+    image: app
+    container_name: background_tasks
+    command: python manage.py process_tasks
+    volumes:
+      - .:/usr/src/app/
+    depends_on:
+      - pgdb
+    
+
+  pgdb:
+    image: postgres
+    container_name: pgdb
+    ports:
+      - "5432"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+volumes:
+  pgdata:
