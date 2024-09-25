@@ -1,16 +1,9 @@
-super user --name: birukchafamo --password: XY8g,C11
-
-run python manage.py runserver && lt -p 8000
-
-types of notifications:
-- equb notification: [
-    new member joined - done,
-    new round started - done,
-    equb full/activated - done,
-    new highest bid - not done
-]
-
-- social notifications: [
+how to run:
+    - python3 Equb/manage.py process_tasks
+    - python3 Equb/manage.py runserver 0.0.0.0:8000
 
 
-]
+super user --name: birukchafamo --password: same as jitu
+
+users: sosi and jitu, same password but sosi has !!
+postman email: biruckz@gmail.com password: work login
