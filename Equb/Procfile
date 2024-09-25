@@ -1,2 +1,2 @@
-web: gunicorn Equb.wsgi
+web: gunicorn Equb.wsgi:application --port $PORT --bind 0.0.0.0 -v2
 backgroundProcessor: python Equb/manage.py process_tasks -v2
