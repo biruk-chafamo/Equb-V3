@@ -1,9 +1,0 @@
-how to run:
-    - python3 Equb/manage.py process_tasks
-    - python3 Equb/manage.py runserver 0.0.0.0:8000
-
-
-super user --name: birukchafamo --password: same as jitu
-
-users: sosi and jitu, same password but sosi has !!
-postman email: biruckz@gmail.com password: work login
