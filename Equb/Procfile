@@ -1,2 +1,2 @@
-web: gunicorn euqb.wsgi
+web: gunicorn Equb.wsgi
 backgroundProcessor: python Equb/manage.py process_tasks -v2
