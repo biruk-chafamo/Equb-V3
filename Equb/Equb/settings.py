@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,6 +24,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', default='django-insecure')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', default=True)
+
+PROD = os.getenv('PROD', False)
 
 ALLOWED_HOSTS = ['*']
 
@@ -106,6 +109,11 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+if PROD:
+    db_from_env = dj_database_url.config(conn_max_age=600)
+    DATABASES['default'].update(db_from_env)    
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
