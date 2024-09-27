@@ -31,7 +31,8 @@ ALLOWED_HOSTS = ['*']
 
 # WARNING: make sure this is set to the port of the frontend
 CORS_ALLOWED_ORIGINS = [
-     "http://localhost:56937","http://localhost:57391"
+     "http://localhost:56937","http://localhost:57391",
+    "https://equb-finance-web-6a2752c0fded.herokuapp.com"
 ]
 
 # Application definition
