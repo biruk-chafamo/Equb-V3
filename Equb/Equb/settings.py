@@ -11,29 +11,41 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os
+import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'mgu$lsorq^t(83k^bx09-@ow#g%igzs9o4e%l6&)%)*4xcuguu'
+SECRET_KEY = os.getenv('SECRET_KEY', default='django-insecure')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', default=True)
+
+PROD = os.getenv('PROD', False)
 
 ALLOWED_HOSTS = ['*']
 
+# WARNING: make sure this is set to the port of the frontend
+CORS_ALLOWED_ORIGINS = [
+     "http://localhost:56937","http://localhost:57391",
+    "https://equb-finance-web-6a2752c0fded.herokuapp.com",
+    "https://app.equbfinance.com",
+]
 
 # Application definition
 
 INSTALLED_APPS = [
     'moneypool.apps.MoneypoolConfig',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'django_rest_passwordreset',
+    'corsheaders',
     'guardian',
+    'background_task',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,6 +57,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -56,6 +69,13 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+}
 
 ROOT_URLCONF = 'Equb.urls'
 
@@ -84,13 +104,18 @@ WSGI_APPLICATION = 'Equb.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'Equb2',
-        'USER': 'equb',
-        'PASSWORD': 'XY8g,C11',
-        'HOST': 'localhost',
-        'PORT': '',
+        'NAME': os.getenv('POSTGRES_DB'),
+        'USER': os.getenv('POSTGRES_USER'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('POSTGRES_HOST'),
+        'PORT': '5432',
     }
 }
+
+if PROD:
+    db_from_env = dj_database_url.config(conn_max_age=600)
+    DATABASES['default'].update(db_from_env)    
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -130,9 +155,54 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
+# est
+TIME_ZONE = 'America/New_York'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
-STATIC_URL = '/static/'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+USE_S3 = True
+
+if USE_S3:
+    DEFAULT_FILE_STORAGE_BACKEND = 'moneypool.storage_backends.PublicMediaStorage'
+else:
+    DEFAULT_FILE_STORAGE_BACKEND = "django.core.files.storage.FileSystemStorage"
+
+STATIC_URL = '/staticfiles/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = '/mediafiles/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
+STORAGES = {
+    "default": {"BACKEND": DEFAULT_FILE_STORAGE_BACKEND},
+    "public_media": {"BACKEND": DEFAULT_FILE_STORAGE_BACKEND},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", default=None)
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", default=None)
+
+    if AWS_ACCESS_KEY_ID is None or AWS_SECRET_ACCESS_KEY is None:
+        print("Missing AWS credentials")
+
+    STORAGES["public_media"].update(BACKEND='moneypool.storage_backends.PublicMediaStorage')
+    STORAGES["staticfiles"].update(BACKEND='moneypool.storage_backends.StaticStorage')
+    
+    INSTALLED_APPS.append("storages")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", str)
+    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    AWS_S3_OBJECT_PARAMETERS = { "CacheControl": "max-age=86400"}
+    AWS_MEDIA_LOCATION = "media/"
+    AWS_STATIC_LOCATION = "static/"
+
+STRIPE_SECRET_KEY=os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY=os.getenv('STRIPE_PUBLISHABLE_KEY')
