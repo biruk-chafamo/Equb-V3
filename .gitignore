@@ -1,0 +1,11 @@
+# Environments
+venv/
+.idea/
+.vscode/
+notes.txt
+mistirkutirs.txt
+.env
+__pycache__/
+newvenv/
+equb_venv/
+
