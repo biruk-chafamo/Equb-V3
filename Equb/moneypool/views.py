@@ -8,11 +8,14 @@ from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.db.models import Q
+from django.conf import settings
+import stripe
 
 from .serializers import *
 from .models import *
 from .permissions import *
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -32,6 +35,35 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.request.method in ['PUT', 'PATCH']:
             return EditUserSerializer
         return ListUserSerializer
+
+    @action(detail=False, methods=['post'], url_path='createstripeaccount')
+    @permission_classes([IsAuthenticated])
+    def create_stripe_account(self, request):
+        """
+        create a stripe account for the current user
+        """
+        user = self.request.user
+        if user.stripe_account_id:
+            return Response(
+                {"detail": "User already has a stripe account."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        account = stripe.Account.create(
+            country='US',
+            email=user.email,
+            controller={
+                "stripe_dashboard": {
+                    "type": "none",
+                },
+            },
+            capabilities={
+                "card_payments": {"requested": True},
+                "transfers": {"requested": True}
+            },
+        )
+        user.stripe_account_id = account.id
+        user.save()
+        return Response({"account_id": account.id})
 
     @action(detail=False, methods=['get'], url_path='currentuser')
     @permission_classes([IsAuthenticated])
@@ -369,3 +401,6 @@ class PaymentMethodViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Model
         """
         services = [service[0] for service in ServiceChoices.choices]
         return Response(services)
+    
+
+
