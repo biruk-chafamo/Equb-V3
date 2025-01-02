@@ -6,6 +6,5 @@ from .models import Equb
 def select_winner_task(equb_name):
     equb = Equb.objects.get(name=equb_name)
     equb.balance_manager.select_winner()
-    print("Winner selected ----------------------")
     
     

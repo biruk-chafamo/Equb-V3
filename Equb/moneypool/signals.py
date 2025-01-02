@@ -147,7 +147,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     email_plaintext_message = render_to_string('email/user_reset_password.txt', context)
 
     msg = EmailMultiAlternatives(
-        "Password Reset for Equb Finanace",
+        "Password Reset for Equb Finance",
         email_plaintext_message,
         "noreply@somehost.local",
         [reset_password_token.user.email]
