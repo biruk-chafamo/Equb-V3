@@ -64,7 +64,7 @@ class ActivateEqubTestCase(APITestCase):
 
         # logging in test_user_1 to accept invitation to join equb
         self.client.login(username='test_user_1', password='test_password_1')
-        response.data.update({'is_accepted': True})
+        response.data.update({'is_accepted': True, 'receiver': response.data['receiver']['url'], 'equb': response.data['equb']['url']})
         self.client.put(response.data['url'], response.data)  # accepting connection request
 
         equb = Equb.objects.get(name='test_equb')
@@ -122,7 +122,8 @@ class ActivateEqubTestCase(APITestCase):
 
         # sending a payment confirmation request from user_1 to user_0
         self.client.login(username='test_user_1', password='test_password_1')
-        data = {'equb': Util.get_test_object_url('Equb', equb), 'round': 1}
+        selected_payment_method = PaymentMethod.objects.filter(user=self.users[1], service=ServiceChoices.CASH).first()
+        data = {'equb': Util.get_test_object_url('Equb', equb), 'round': 1, 'payment_method': Util.get_test_object_url('PaymentMethod', selected_payment_method)}
         response = self.client.post(reverse('paymentconfirmationrequest-list'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(
@@ -137,7 +138,8 @@ class ActivateEqubTestCase(APITestCase):
         select_winner_task.now(equb.name) # this will make user_1 the winner
         
         # sending a payment confirmation request from user_0 to user_1
-        data = {'equb': Util.get_test_object_url('Equb', equb), 'round': 2}
+        selected_payment_method = PaymentMethod.objects.filter(user=self.users[0], service=ServiceChoices.CASH).first()
+        data = {'equb': Util.get_test_object_url('Equb', equb), 'round': 2, 'payment_method': Util.get_test_object_url('PaymentMethod', selected_payment_method)}
         response = self.client.post(reverse('paymentconfirmationrequest-list'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(
