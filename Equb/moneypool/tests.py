@@ -139,7 +139,6 @@ class ActivateEqubTestCase(APITestCase):
         # sending a payment confirmation request from user_0 to user_1
         data = {'equb': Util.get_test_object_url('Equb', equb), 'round': 2}
         response = self.client.post(reverse('paymentconfirmationrequest-list'), data)
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(
             PaymentConfirmationRequest.objects.get(equb=equb, sender=self.users[0]).amount, 
