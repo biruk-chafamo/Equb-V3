@@ -118,15 +118,17 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='search')
     def search(self, request):
         """
-        search for users by name
+        search for users by name paginated by 10
         """
+        paginator = PageNumberPagination()
+        paginator.page_size = 5
         name = request.query_params.get('name')
         if not name:
             return Response(
                 {"detail": "Name is a required parameter."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        # return users that have the name in their first or last name or username
+        
         queryset = User.objects.filter(
             Q(first_name__icontains=name) | 
             Q(last_name__icontains=name) | 
@@ -136,9 +138,9 @@ class UserViewSet(viewsets.ModelViewSet):
             Q(username__in=['deleted', 'AnonymousUser']) | 
             Q(is_staff=True)
         )
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        result_page = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     
 class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):

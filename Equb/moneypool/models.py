@@ -257,7 +257,7 @@ class BalanceManager(models.Model):
             all_members = self.equb.members.all()
             received = self.received.all()
             not_received = all_members.difference(received)
-            logging.warning(f'{not_received.count()} member have not won yet')
+            logging.info(f'{not_received.count()} member have not won yet')
             
             if not_received:
                 win = Win.objects.create(
@@ -265,7 +265,7 @@ class BalanceManager(models.Model):
                     round=current_round
                 )
                 self.wins.add(win)
-                logging.warning(f'{win.user.username} won round {current_round}')
+                logging.info(f'{win.user.username} won round {current_round}')
                 self.received.add(win.user)
                 return win.user
         
@@ -319,10 +319,10 @@ class BalanceManager(models.Model):
         winner = self.select_winner()
         award = self.calculate_winners_award(self.finished_rounds + 1)
         if winner:
-            logging.warning(f'award {award} bank account {winner.bank_account}')
+            logging.info(f'award {award} bank account {winner.bank_account}')
             winner.bank_account += award  # amount = equb value if highest bid = 0
             winner.save()
-            logging.warning(f'{winner.username} award {award}')
+            logging.info(f'{winner.username} award {award}')
 
     def collect_money(self):
         """
@@ -425,10 +425,8 @@ class Request(models.Model):
         pass
 
     def save(self, *args, **kwargs):
-        logging.warning(f'addressed before --------------^^^^^^^^^')
         if self.pk: # if instance exists
             addressed_before = self.__class__.objects.get(pk=self.pk).is_accepted or self.__class__.objects.get(pk=self.pk).is_rejected or self.__class__.objects.get(pk=self.pk).is_expired
-            logging.warning(f'addressed before {addressed_before}')
             if self.is_accepted and not addressed_before:
                 super().save(*args, **kwargs)
                 self.accept()
