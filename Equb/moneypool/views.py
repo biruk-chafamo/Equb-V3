@@ -65,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save()
         return Response({"account_id": account.id})
 
-    @action(detail=False, methods=['get'], url_path='currentuser')
+    @action(detail=False, methods=['get', 'patch', 'put'], url_path='currentuser')
     @permission_classes([IsAuthenticated])
     def current_user(self, request):
         """

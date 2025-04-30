@@ -1,22 +1,36 @@
+from datetime import timedelta
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from django.contrib.auth.password_validation import validate_password
+from django.core.files.base import ContentFile
 
 from .models import *
-from datetime import timedelta
-from decimal import Decimal
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = [
             'url', 'username', 'first_name', 'last_name',
-            'email', 'password', 'password2', 'bank_account',
+            'email', 'password', 'password2', 'bank_account', 'profile_picture'
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        profile_picture = data.get('profile_picture')
+        if profile_picture is not None:
+            data['profile_picture'] = self.context['request'].build_absolute_uri(profile_picture)
+        else:   
+            data['profile_picture'] = None
+
+        return data
+
 
     def validate(self, attrs):
         if attrs.get('password') != attrs.get('password2'):
@@ -71,14 +85,19 @@ class ListUserSerializer(serializers.HyperlinkedModelSerializer):
     friends = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     class Meta:
         model = User
-        fields = ['id', 'url', 'username', 'first_name', 'last_name', 'friends', 'score', 'selected_payment_methods', 'joined_equbs']  # TODO: remove friends from list
+        fields = ['id', 'url', 'username', 'first_name', 'last_name', 'friends', 'score', 'selected_payment_methods', 'joined_equbs', 'profile_picture']  # TODO: remove friends from list
         read_only_fields = ['first_name', 'last_name', 'friends', 'score', 'joined_equbs']
 
+
 class EditUserSerializer(serializers.HyperlinkedModelSerializer):
+    selected_payment_methods = PaymentMethodSerializer(many=True, read_only=True)
+    joined_equbs = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    friends = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    profile_picture = serializers.ImageField(required=False, allow_null=True)
     class Meta:
         model = User
-        fields = ['id', 'url', 'username', 'first_name', 'last_name', 'email', 'bank_account']
-        read_only_fields = ['id', 'username']
+        fields = ['id', 'url', 'username', 'first_name', 'last_name', 'email', 'bank_account', 'profile_picture', 'score', 'selected_payment_methods', 'friends', 'joined_equbs']
+        read_only_fields = ['id', 'username', 'score', 'selected_payment_methods', 'friends', 'joined_equbs']
 class EqubSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):

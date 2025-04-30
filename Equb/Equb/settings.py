@@ -170,7 +170,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-USE_S3 = True
+USE_S3 = os.getenv('USE_S3', default=True)
 
 if USE_S3:
     DEFAULT_FILE_STORAGE_BACKEND = 'moneypool.storage_backends.PublicMediaStorage'
@@ -203,6 +203,8 @@ if USE_S3:
     AWS_S3_OBJECT_PARAMETERS = { "CacheControl": "max-age=86400"}
     AWS_MEDIA_LOCATION = "media/"
     AWS_STATIC_LOCATION = "static/"
+    AWS_QUERYSTRING_AUTH = False
+    AWS_DEFAULT_ACL = None
 
 STRIPE_SECRET_KEY=os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY=os.getenv('STRIPE_PUBLISHABLE_KEY')

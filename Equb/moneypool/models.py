@@ -16,6 +16,7 @@ from guardian.shortcuts import assign_perm
 class User(AbstractUser):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     bank_account = models.DecimalField(max_digits=13, decimal_places=2, default=0.00)
     friends = models.ManyToManyField("self", through='Friendship', blank=True)
     payment_methods = models.ManyToManyField('PaymentMethod', blank=True, related_name='users')
