@@ -297,6 +297,8 @@ class EqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
         # TODO: think about how invitations should be handled
         # if sender != equb.creator:
         #     raise serializers.ValidationError({"sender": "Only the equb creator can send an invitation."})
+        if sender not in equb.members.all():
+            raise serializers.ValidationError({"sender": f'only members of {equb.name} can send invitations.'})
         if receiver in equb.members.all():
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
