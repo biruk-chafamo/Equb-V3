@@ -216,7 +216,21 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
    
-    
+    @action(detail=False, methods=['get'], url_path='by-user')
+    def by_user(self, request):
+        """
+        get equbs that a specific user has joined
+        """
+        user_id = request.query_params.get('user')
+        if not user_id:
+            return Response(
+                {"detail": "User is a required parameter."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user = User.objects.get(id=user_id)
+        equbs = user.joined_equbs.all()
+        serializer = self.get_serializer(equbs, many=True)
+        return Response(serializer.data)
 
 class BidViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     """
