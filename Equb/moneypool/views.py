@@ -256,7 +256,7 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
 
     def get_queryset(self):
         user = self.request.user
-        return user.received_equbjoinrequests  # TODO: include sent_equbjoinrequests
+        return user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()
 
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
