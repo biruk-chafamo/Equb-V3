@@ -219,7 +219,8 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='by-user')
     def by_user(self, request):
         """
-        get equbs that a specific user has joined
+        get public equbs that a specific user has joined, or the specified user's private 
+        equbs that the current user has access to through invitation or shared membership.
         """
         user_id = request.query_params.get('user')
         if not user_id:
@@ -228,7 +229,12 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         user = User.objects.get(id=user_id)
-        equbs = user.joined_equbs.all()
+        current_user = self.request.user
+        public_equbs = user.joined_equbs.filter(is_private=False)
+        shared_private_equbs = user.joined_equbs.filter(is_private=True, members__in=[current_user])
+        current_user_invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
+        invited_private_equbs = current_user_invited_equbs.filter(is_private=True, members__in=[user])
+        equbs = public_equbs | shared_private_equbs | invited_private_equbs
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
 
