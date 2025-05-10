@@ -33,6 +33,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
 
     def validate(self, attrs):
+        # not setting uniquness an non-null constraint in the ORM to avoid back filling the database
+        if attrs.get('email') == '' or attrs.get('email') is None:
+            raise serializers.ValidationError({"email": "This field may not be blank."})
+        if User.objects.filter(email=attrs.get('email')).exists():
+            raise serializers.ValidationError({"email": "This email is already used by a different account."})
+        
         if attrs.get('password') != attrs.get('password2'):
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
