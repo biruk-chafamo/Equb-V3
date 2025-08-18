@@ -24,6 +24,16 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     env:
       DJANGO_SETTINGS_MODULE: Equb.settings_test
       POSTGRES_DB: equb_test
@@ -31,6 +41,7 @@ jobs:
       POSTGRES_PASSWORD: equb_test
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
+      REDIS_URL: redis://localhost:6379
       SECRET_KEY: ci-test-secret-key
       DEBUG: "True"
       USE_S3: "False"
