@@ -16,3 +16,15 @@ def compute_award(pot_amount: Decimal, max_members: int, bid_amount, not_receive
     return pot_amount - winners_contribution
 
 
+def compute_deduction(
+    pot_amount: Decimal,
+    max_members: int,
+    bid_amount,
+    in_not_received: bool,
+) -> Decimal:
+    if in_not_received:
+        return (pot_amount / Decimal(max_members)) * (Decimal(1) - Decimal(bid_amount))
+    else:
+        return pot_amount / Decimal(max_members)
+
+
