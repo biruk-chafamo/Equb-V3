@@ -28,3 +28,14 @@ def compute_deduction(
         return pot_amount / Decimal(max_members)
 
 
+def pick_winner(
+    highest_bidder: Optional[Member],
+    not_received_members: Sequence[Member],
+    rng: Callable[[Sequence[Member]], Member] = random.choice,
+) -> Member:
+    # TODO: think about alternatives to random choice for ties or no-bid scenarios
+    if highest_bidder is not None:
+        return highest_bidder
+    return rng(not_received_members)
+
+
