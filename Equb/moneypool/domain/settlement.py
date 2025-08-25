@@ -39,3 +39,5 @@ def pick_winner(
     return rng(not_received_members)
 
 
+def is_higher_bid(new_amount: Decimal, current_highest_amount: Optional[Decimal]) -> bool:
+    return current_highest_amount is None or new_amount > current_highest_amount
