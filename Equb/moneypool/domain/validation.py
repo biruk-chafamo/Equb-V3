@@ -11,3 +11,7 @@ def is_member(item, collection) -> bool:
     return item in collection
 
 
+def is_max_members_too_low(max_members) -> bool:
+    return max_members < 2
+
+
