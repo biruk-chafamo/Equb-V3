@@ -15,3 +15,7 @@ def is_max_members_too_low(max_members) -> bool:
     return max_members < 2
 
 
+def is_max_members_too_high(max_members) -> bool:
+    return max_members > 20
+
+
