@@ -19,3 +19,7 @@ def is_max_members_too_high(max_members) -> bool:
     return max_members > 20
 
 
+def is_self_request(sender, receiver) -> bool:
+    return sender == receiver
+
+
