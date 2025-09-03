@@ -23,3 +23,7 @@ def is_self_request(sender, receiver) -> bool:
     return sender == receiver
 
 
+def is_accept_and_reject_conflict(is_accepted, is_rejected) -> bool:
+    return bool(is_accepted) and bool(is_rejected)
+
+
