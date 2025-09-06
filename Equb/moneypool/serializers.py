@@ -425,3 +425,38 @@ class PaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerialize
         model = PaymentConfirmationRequest
         fields = ['id', 'url', 'sender', 'receiver', 'equb', 'round', 'payment_method', 'message', 'is_accepted', 'is_rejected', 'creation_date']
         read_only_fields = ['id', 'sender', 'receiver', 'is_accepted', 'is_rejected', 'creation_date']
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    """
+    Serializer for Google authentication requests.
+    This makes the DRF browsable API show proper form fields for both token types.
+    """
+    id_token = serializers.CharField(
+        required=False,
+        help_text="Google ID token received from Google Sign-In",
+        style={'placeholder': 'Google ID token...'}
+    )
+    access_token = serializers.CharField(
+        required=False,
+        help_text="Google Access token (fallback for web)",
+        style={'placeholder': 'Google Access token...'}
+    )
+    PLATFORM_CHOICES = [
+        ('web', 'Web'),
+        ('ios', 'iOS'),
+        ('android', 'Android'),
+    ]
+    
+    platform = serializers.ChoiceField(
+        choices=PLATFORM_CHOICES,
+        required=False,
+        default='web',
+        help_text="Platform: web, ios, or android",
+        style={'placeholder': 'web, ios, or android'}
+    )
+    
+    def validate(self, data):
+        if not data.get('id_token') and not data.get('access_token'):
+            raise serializers.ValidationError("Either id_token or access_token is required")
+        return data

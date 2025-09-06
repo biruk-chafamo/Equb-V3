@@ -21,6 +21,7 @@ class User(AbstractUser):
     friends = models.ManyToManyField("self", through='Friendship', blank=True)
     payment_methods = models.ManyToManyField('PaymentMethod', blank=True, related_name='users')
     stripe_account_id = models.CharField(max_length=150, blank=True)
+    google_id = models.CharField(max_length=100, blank=True, null=True, unique=True, help_text="Google user ID for Google authentication")
     score = models.DecimalField(
         max_digits=3, decimal_places=2, default=4, 
         validators=[MinValueValidator(0.01), MaxValueValidator(5.00)]

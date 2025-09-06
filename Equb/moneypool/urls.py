@@ -24,5 +24,7 @@ urlpatterns = [
     path('api-auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('api-auth/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
-    
+    path('api-auth/smart-password-reset/', views.smart_password_reset, name='smart_password_reset'),
+    path('api-auth/google/', views.google_auth, name='google_auth'),
+    path('api-auth/check-signin-method/', views.check_signin_method, name='check_signin_method'),
 ]
