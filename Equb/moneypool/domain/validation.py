@@ -27,3 +27,5 @@ def is_accept_and_reject_conflict(is_accepted, is_rejected) -> bool:
     return bool(is_accepted) and bool(is_rejected)
 
 
+def is_final_round(current_round: int, max_members: int) -> bool:
+    return current_round >= max_members
