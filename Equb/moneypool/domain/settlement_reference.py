@@ -12,3 +12,11 @@ def award(pot_amount, max_members, bid_amount, not_received_count) -> Fraction:
     )
 
 
+def deduction(pot_amount, max_members, bid_amount, in_not_received) -> Fraction:
+    s = share(pot_amount, max_members)
+    if in_not_received:
+        return s * (Fraction(1) - Fraction(bid_amount))
+    else:
+        return s
+
+
