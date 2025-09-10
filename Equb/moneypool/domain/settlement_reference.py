@@ -20,3 +20,11 @@ def deduction(pot_amount, max_members, bid_amount, in_not_received) -> Fraction:
         return s
 
 
+def member_net(pot_amount, max_members, bids: Sequence, win_round: int) -> Fraction:
+    """`bids[r - 1]` is the winning bid of round r; `win_round` is 1-based."""
+    s = share(pot_amount, max_members)
+    collected_while_waiting = sum(
+        (Fraction(bids[r - 1]) for r in range(1, win_round)), Fraction(0)
+    )
+    paid_to_win_early = Fraction(bids[win_round - 1]) * Fraction(max_members - win_round)
+    return s * (collected_while_waiting - paid_to_win_early)
