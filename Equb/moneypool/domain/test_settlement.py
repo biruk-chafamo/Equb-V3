@@ -18,3 +18,8 @@ def test_compute_award_with_bid():
     assert award == Decimal("55.000")
 
 
+def test_compute_deduction_not_received_member_no_bid():
+    deduction = compute_deduction(Decimal("100.00"), 2, 0, in_not_received=True)
+    assert deduction == Decimal("50.00")
+
+
