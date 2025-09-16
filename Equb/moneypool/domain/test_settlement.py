@@ -28,3 +28,7 @@ def test_compute_deduction_already_received_member_flat_share():
     assert deduction == Decimal("50.00")
 
 
+def test_pick_winner_prefers_highest_bidder():
+    assert pick_winner("abeni", ["biruk", "dani"], rng=lambda seq: "should-not-be-called") == "abeni"
+
+
