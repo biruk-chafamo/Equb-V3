@@ -23,3 +23,8 @@ def test_compute_deduction_not_received_member_no_bid():
     assert deduction == Decimal("50.00")
 
 
+def test_compute_deduction_already_received_member_flat_share():
+    deduction = compute_deduction(Decimal("100.00"), 2, 0, in_not_received=False)
+    assert deduction == Decimal("50.00")
+
+
