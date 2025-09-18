@@ -32,3 +32,7 @@ def test_pick_winner_prefers_highest_bidder():
     assert pick_winner("abeni", ["biruk", "dani"], rng=lambda seq: "should-not-be-called") == "abeni"
 
 
+def test_pick_winner_falls_back_to_rng_when_no_bidder():
+    assert pick_winner(None, ["biruk", "dani"], rng=lambda seq: seq[0]) == "biruk"
+
+
