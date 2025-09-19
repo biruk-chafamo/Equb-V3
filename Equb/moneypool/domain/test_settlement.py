@@ -36,3 +36,7 @@ def test_pick_winner_falls_back_to_rng_when_no_bidder():
     assert pick_winner(None, ["biruk", "dani"], rng=lambda seq: seq[0]) == "biruk"
 
 
+def test_is_higher_bid_true_when_no_current_highest():
+    assert is_higher_bid(Decimal("0.100"), None) is True
+
+
