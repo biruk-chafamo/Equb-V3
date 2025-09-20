@@ -40,3 +40,7 @@ def test_is_higher_bid_true_when_no_current_highest():
     assert is_higher_bid(Decimal("0.100"), None) is True
 
 
+def test_is_higher_bid_true_when_strictly_greater():
+    assert is_higher_bid(Decimal("0.200"), Decimal("0.100")) is True
+
+
