@@ -44,3 +44,8 @@ def test_is_higher_bid_true_when_strictly_greater():
     assert is_higher_bid(Decimal("0.200"), Decimal("0.100")) is True
 
 
+def test_compute_award_at_max_bid():
+    award = compute_award(Decimal("100.00"), 2, Decimal("1.000"), not_received_count=1)
+    assert award == Decimal("50.00")
+
+
