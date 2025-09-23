@@ -49,3 +49,8 @@ def test_compute_award_at_max_bid():
     assert award == Decimal("50.00")
 
 
+def test_compute_deduction_at_max_bid_not_received_member():
+    deduction = compute_deduction(Decimal("100.00"), 2, Decimal("1.000"), in_not_received=True)
+    assert deduction == Decimal("0.00")
+
+
