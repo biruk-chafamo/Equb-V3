@@ -54,3 +54,11 @@ def test_compute_deduction_at_max_bid_not_received_member():
     assert deduction == Decimal("0.00")
 
 
+def test_compute_deduction_rounding_remainder_case():
+    # amount=100, max_members=3, no bid means deduction is 100/3
+    deduction = compute_deduction(Decimal("100.00"), 3, 0, in_not_received=True)
+    expected = Decimal("100.00") / 3
+    assert deduction == expected
+    assert deduction != deduction.quantize(Decimal("0.01"))
+
+
