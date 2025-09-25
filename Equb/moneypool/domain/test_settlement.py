@@ -62,3 +62,24 @@ def test_compute_deduction_rounding_remainder_case():
     assert deduction != deduction.quantize(Decimal("0.01"))
 
 
+def test_compute_deduction_mid_bid_three_member_scenario_exact_conservation():
+    """
+    3-member equb, mid-round bid: amount=90,
+    max_members=3, bid=0.500, 1 winner + 2 not-yet-received members (k=2).
+    """
+    amount = Decimal("90.00")
+    max_members = 3
+    bid = Decimal("0.500")
+    not_received_count = 2
+
+    award = compute_award(amount, max_members, bid, not_received_count)
+    deduction_each_loser = compute_deduction(amount, max_members, bid, in_not_received=True)
+
+    # award = 90 - 90*(2/3)*0.5 = 90 - 30 = 60
+    assert award == Decimal("60.000")
+    # each loser: (90/3)*(1-0.5) = 15
+    assert deduction_each_loser == Decimal("15.000")
+    # both losers' deductions sum to exactly the collected portion (award - flat share)
+    assert deduction_each_loser * 2 == award - (amount / max_members)
+
+
