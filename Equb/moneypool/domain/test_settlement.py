@@ -83,3 +83,10 @@ def test_compute_deduction_mid_bid_three_member_scenario_exact_conservation():
     assert deduction_each_loser * 2 == award - (amount / max_members)
 
 
+def test_pick_winner_never_returns_outside_the_candidate_list():
+    import random
+
+    candidates = ["biruk", "dani", "abeni"]
+    for _ in range(50):
+        winner = pick_winner(None, candidates, rng=random.choice)
+        assert winner in candidates
