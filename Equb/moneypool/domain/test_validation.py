@@ -18,3 +18,8 @@ def test_is_blank_email():
     assert is_blank_email('a@example.com') is False
 
 
+def test_passwords_match():
+    assert passwords_match('a', 'a') is True
+    assert passwords_match('a', 'b') is False
+
+
