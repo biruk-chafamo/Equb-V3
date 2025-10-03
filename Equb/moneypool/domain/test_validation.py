@@ -23,3 +23,10 @@ def test_passwords_match():
     assert passwords_match('a', 'b') is False
 
 
+def test_is_member():
+    assert is_member(2, [1, 2, 3]) is True
+    assert is_member(4, [1, 2, 3]) is False
+    assert is_member(2, {1, 2, 3}) is True
+    assert is_member(4, set()) is False
+
+
