@@ -30,3 +30,9 @@ def test_is_member():
     assert is_member(4, set()) is False
 
 
+def test_is_max_members_too_low():
+    assert is_max_members_too_low(1) is True
+    assert is_max_members_too_low(2) is False
+    assert is_max_members_too_low(3) is False
+
+
