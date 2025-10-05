@@ -42,3 +42,8 @@ def test_is_max_members_too_high():
     assert is_max_members_too_high(2) is False
 
 
+def test_is_self_request():
+    assert is_self_request(1, 1) is True
+    assert is_self_request(1, 2) is False
+
+
