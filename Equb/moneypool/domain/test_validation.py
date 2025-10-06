@@ -47,3 +47,10 @@ def test_is_self_request():
     assert is_self_request(1, 2) is False
 
 
+def test_is_accept_and_reject_conflict():
+    assert is_accept_and_reject_conflict(True, True) is True
+    assert is_accept_and_reject_conflict(True, False) is False
+    assert is_accept_and_reject_conflict(False, True) is False
+    assert is_accept_and_reject_conflict(None, None) is False
+
+
