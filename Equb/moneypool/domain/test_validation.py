@@ -54,3 +54,7 @@ def test_is_accept_and_reject_conflict():
     assert is_accept_and_reject_conflict(None, None) is False
 
 
+def test_is_final_round():
+    assert is_final_round(current_round=2, max_members=2) is True
+    assert is_final_round(current_round=2, max_members=3) is False
+    assert is_final_round(current_round=3, max_members=3) is True
