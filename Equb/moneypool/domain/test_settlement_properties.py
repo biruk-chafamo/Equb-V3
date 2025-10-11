@@ -60,3 +60,10 @@ def test_final_round_does_not_overcollect(pot, max_members, bid):
     assert award == pot
 
 
+@given(pot=_amounts, max_members=_max_members, bid=_bids, not_received_count=st.integers(min_value=0, max_value=19))
+@settings(max_examples=300)
+def test_compute_award_is_deterministic(pot, max_members, bid, not_received_count):
+    results = {compute_award(pot, max_members, bid, not_received_count) for _ in range(5)}
+    assert len(results) == 1
+
+
