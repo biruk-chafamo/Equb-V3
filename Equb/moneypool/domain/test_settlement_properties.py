@@ -74,3 +74,16 @@ def test_compute_deduction_is_deterministic(pot, max_members, bid):
     assert len(results) == 1
 
 
+@given(pot=_amounts, max_members=_max_members, bid=_bids, not_received_count=st.integers(min_value=0, max_value=19))
+@settings(max_examples=300)
+def test_compute_award_is_bounded(pot, max_members, bid, not_received_count):
+    """
+    award is always between pot*(max_members - not_received_count)/max_members
+    (the minimum, at bid=1.000) and the full pot (at bid=0).
+    """
+    not_received_count = min(not_received_count, max_members - 1)
+    award = compute_award(pot, max_members, bid, not_received_count)
+    minimum_award = pot * Decimal(max_members - not_received_count) / Decimal(max_members)
+    assert minimum_award - _PRECISION_EPSILON <= award <= pot
+
+
