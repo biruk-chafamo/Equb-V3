@@ -67,3 +67,10 @@ def test_compute_award_is_deterministic(pot, max_members, bid, not_received_coun
     assert len(results) == 1
 
 
+@given(pot=_amounts, max_members=_max_members, bid=_bids)
+@settings(max_examples=200)
+def test_compute_deduction_is_deterministic(pot, max_members, bid):
+    results = {compute_deduction(pot, max_members, bid, in_not_received=True) for _ in range(5)}
+    assert len(results) == 1
+
+
