@@ -87,3 +87,13 @@ def test_compute_award_is_bounded(pot, max_members, bid, not_received_count):
     assert minimum_award - _PRECISION_EPSILON <= award <= pot
 
 
+@given(pot=_amounts, max_members=_max_members, bid=_bids)
+@settings(max_examples=300)
+def test_compute_deduction_never_negative(pot, max_members, bid):
+    """
+    a not-yet-received member's deduction ((pot/N)*(1-bid)) must never be negative, for any 
+    bid within the valid range.
+    """
+    deduction = compute_deduction(pot, max_members, bid, in_not_received=True)
+    assert deduction >= 0
+    assert deduction <= pot / max_members
