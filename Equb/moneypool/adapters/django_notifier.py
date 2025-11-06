@@ -25,3 +25,6 @@ class DjangoNotifier:
         self.live_updates = live_updates
         self.scheduler = scheduler
 
+    def equb_created(self, equb):
+        NewEqubNotification.notify(equb=equb)
+
