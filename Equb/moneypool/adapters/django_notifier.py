@@ -28,3 +28,6 @@ class DjangoNotifier:
     def equb_created(self, equb):
         NewEqubNotification.notify(equb=equb)
 
+    def member_joined(self, equb, new_member):
+        NewMemberNotification.notify(equb=equb, new_member=new_member)
+
