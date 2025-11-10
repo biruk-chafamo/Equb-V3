@@ -31,3 +31,6 @@ class DjangoNotifier:
     def member_joined(self, equb, new_member):
         NewMemberNotification.notify(equb=equb, new_member=new_member)
 
+    def equb_activated(self, equb):
+        self._schedule_next_round(equb)
+
