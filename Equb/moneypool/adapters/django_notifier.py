@@ -34,3 +34,11 @@ class DjangoNotifier:
     def equb_activated(self, equb):
         self._schedule_next_round(equb)
 
+    def bid_outbid(self, equb, previous_highest_bid, new_highest_bid):
+        OutBidNotification.notify(
+            equb=equb,
+            previous_highest_bid=previous_highest_bid,
+            new_highest_bid=new_highest_bid,
+        )
+        self.live_updates.equb_updated(equb.id)
+
