@@ -46,3 +46,8 @@ class DjangoNotifier:
         NewRoundNotification.notify(equb=equb)
         self._schedule_next_round(equb)
 
+    def payment_confirmation_requested(self, payment_confirmation_request):
+        NewPaymentConfirmationRequestNotification.notify(
+            payment_confirmation_request=payment_confirmation_request
+        )
+
