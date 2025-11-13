@@ -42,3 +42,7 @@ class DjangoNotifier:
         )
         self.live_updates.equb_updated(equb.id)
 
+    def round_advanced(self, equb):
+        NewRoundNotification.notify(equb=equb)
+        self._schedule_next_round(equb)
+
