@@ -51,3 +51,8 @@ class DjangoNotifier:
             payment_confirmation_request=payment_confirmation_request
         )
 
+    def _schedule_next_round(self, equb):
+        self.scheduler.schedule_winner_selection(equb.name, self.clock.now() + equb.cycle)
+
+
+default_notifier: Notifier = DjangoNotifier()
