@@ -29,3 +29,14 @@ def create_equb(
     return equb
 
 
+def add_member(equb, member, notifier: Notifier = default_notifier, clock: Clock = default_clock) -> None:
+    equb.members.add(member)
+    notifier.member_joined(equb, member)
+    if equb.members.count() == equb.max_members:
+        equb.activate()
+        equb.balance_manager.activate()
+        equb.balance_manager.current_round_start_date = clock.now()
+        equb.balance_manager.save()
+        notifier.equb_activated(equb)
+
+
