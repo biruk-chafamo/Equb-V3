@@ -40,3 +40,13 @@ def add_member(equb, member, notifier: Notifier = default_notifier, clock: Clock
         notifier.equb_activated(equb)
 
 
+def place_bid(user, equb, amount, notifier: Notifier = default_notifier) -> Bid:
+    current_round = equb.balance_manager.finished_rounds + 1
+    bid = Bid.objects.create(
+        equb=equb, user=user, round=current_round, amount=amount, date=timezone.now()
+    )
+    if bid.is_highest_bid():
+        previous_highest_bid = HighestBid.objects.get(equb=bid.equb, round=bid.round).bid
+        notifier.bid_outbid(equb, previous_highest_bid, bid)
+        bid.make_highest_bid()
+    return bid
