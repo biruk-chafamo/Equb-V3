@@ -2,16 +2,14 @@ from django.db import models, transaction
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-from django.dispatch import Signal
 
 import datetime
-import random
 import logging
-import decimal
-import pytz
 
 from rest_framework import serializers
 from guardian.shortcuts import assign_perm
+
+from .domain import settlement
 
 class User(AbstractUser):
     first_name = models.CharField(max_length=150)
