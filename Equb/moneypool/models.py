@@ -136,8 +136,6 @@ class Win(models.Model):
     def __str__(self):
         return str(self.user.username) + ' won round ' + str(self.round)
 
-new_round_signal = Signal()
-
 class BalanceManager(models.Model):
     equb = models.OneToOneField(to=Equb, on_delete=models.CASCADE, related_name='balance_manager')
     received = models.ManyToManyField(User, blank=True, related_name='received_equb_managers')
