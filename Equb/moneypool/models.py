@@ -181,8 +181,8 @@ class BalanceManager(models.Model):
                 "seconds": 0
             }
         else: 
-            next_round_time = self.current_round_start_date.replace(tzinfo=pytz.UTC) + self.equb.cycle
-            delta = next_round_time - datetime.datetime.now(tz=pytz.UTC)
+            next_round_time = self.current_round_start_date + self.equb.cycle
+            delta = next_round_time - timezone.now()
             days = delta.days
             hours, remainder = divmod(delta.seconds, 3600)
             minutes, _ = divmod(remainder, 60)
