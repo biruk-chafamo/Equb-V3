@@ -233,7 +233,7 @@ class BalanceManager(models.Model):
         """
         win_dates = [win.date for win in self.wins.all()]
         if self.current_round_start_date and self.finished_rounds < self.equb.max_members:
-            next_win_date = self.current_round_start_date.replace(tzinfo=pytz.UTC) + self.equb.cycle
+            next_win_date = self.current_round_start_date + self.equb.cycle
             win_dates.append(next_win_date)
         return win_dates
 
