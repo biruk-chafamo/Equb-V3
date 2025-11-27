@@ -256,85 +256,39 @@ class BalanceManager(models.Model):
             received = self.received.all()
             not_received = all_members.difference(received)
             logging.info(f'{not_received.count()} member have not won yet')
-            
+
             if not_received:
-                win = Win.objects.create(
-                    user=highest_bid.bid.user if highest_bid.bid else random.choice(not_received), 
-                    round=current_round
-                )
+                highest_bidder = highest_bid.bid.user if highest_bid.bid else None
+                winning_user = settlement.pick_winner(highest_bidder, list(not_received))
+                win = Win.objects.create(user=winning_user, round=current_round)
                 self.wins.add(win)
                 logging.info(f'{win.user.username} won round {current_round}')
                 self.received.add(win.user)
                 return win.user
-        
+
     def calculate_winners_award(self, round):
         equb = self.equb
-        highest_bid = equb.highest_bids.get(round=round) 
-        if highest_bid.bid:
-            bid_amount = highest_bid.bid.amount
-        else:
-            bid_amount = 0
-        
-        deductible_portion = equb.amount * decimal.Decimal(1 - 1 / equb.max_members)
-        deducted_award = deductible_portion * decimal.Decimal(1 - bid_amount)
-        non_deductible_award = equb.amount / equb.max_members
-        award = non_deductible_award + deducted_award
-        
-        return award
-    
+        highest_bid = equb.highest_bids.get(round=round)
+        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
+        not_received_count = equb.members.all().difference(self.received.all()).count()
+        return settlement.compute_award(equb.amount, equb.max_members, bid_amount, not_received_count)
+
     def calculate_losers_deductions(self, member, round):
         """
-        calculates the amount each member must pay in the next round; 
+        calculates the amount each member must pay in the next round;
         amount of deduction depends on whether the member has received equb in previous rounds.
         """
         equb = self.equb
         all_members = equb.members.all()
-        not_received = all_members.difference(self.received.all())
-        max_members = equb.max_members
-        highest_bid = equb.highest_bids.get(round=round) 
+        received = self.received.all()
+        not_received = all_members.difference(received)
+        highest_bid = equb.highest_bids.get(round=round)
+        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
 
-        if highest_bid.bid:
-            bid_amount = highest_bid.bid.amount
-        else:
-            bid_amount = 0
-
-        # winner's contribution = 0 if there is no bid
-        winners_contribution = equb.amount * decimal.Decimal((1 - 1 / max_members)) * decimal.Decimal((bid_amount))
-
-        if member in not_received: 
-            return (equb.amount / max_members) - (winners_contribution / not_received.count())
-        elif member in self.received.all():
-            return equb.amount / max_members
-        else: # winner
-            return 0
-        
-
-    def update_winner_account(self):
-        """
-        adds the total value of equb to winners account minus the percentage
-        of this amount equal to what was bid
-        """
-        winner = self.select_winner()
-        award = self.calculate_winners_award(self.finished_rounds + 1)
-        if winner:
-            logging.info(f'award {award} bank account {winner.bank_account}')
-            winner.bank_account += award  # amount = equb value if highest bid = 0
-            winner.save()
-            logging.info(f'{winner.username} award {award}')
-
-    def collect_money(self):
-        """
-        deducts the correct amount from equb members.
-        Distributes the highest bid to those who haven't
-        received their equbs yet. Those who received their
-        equb won't benefit from the bid.
-        """
-
-        current_round = self.finished_rounds + 1
-        for member in self.equb.members.all(): 
-            member.bank_account -= self.calculate_losers_deductions(member, current_round)
-            member.save()
-            
+        return settlement.compute_deduction(
+            equb.amount, equb.max_members, bid_amount,
+            in_not_received=member in not_received,
+        )
 
     def setup_next_round(self):
         self.equb.is_in_payment_stage = False
