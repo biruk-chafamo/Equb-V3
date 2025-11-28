@@ -340,10 +340,8 @@ class Bid(models.Model):
 
     def is_highest_bid(self):
         highest_bid = HighestBid.objects.get(equb=self.equb, round=self.round)
-        if not highest_bid.bid or (highest_bid.bid and self.amount > highest_bid.bid.amount):
-            return True
-        else:
-            return False
+        current_highest_amount = highest_bid.bid.amount if highest_bid.bid else None
+        return settlement.is_higher_bid(self.amount, current_highest_amount)
 
     def make_highest_bid(self):
         highest_bid = HighestBid.objects.get(equb=self.equb, round=self.round)
