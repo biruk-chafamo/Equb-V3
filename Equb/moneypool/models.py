@@ -299,11 +299,17 @@ class BalanceManager(models.Model):
         self.save()
         
         if self.equb.max_members == self.finished_rounds:
-            self.equb.is_completed = True  
-            self.equb.end_date = timezone.now()          
+            self.equb.is_completed = True
+            self.equb.end_date = timezone.now()
             self.equb.save()
         else:
-            new_round_signal.send(sender=self.__class__, instance = self, equb=self.equb)
+            from .adapters.system_clock import default_clock
+            self.current_round_start_date = default_clock.now()
+            self.save()
+            HighestBid.objects.create(equb=self.equb, round=self.finished_rounds + 1)
+
+            from .adapters.django_notifier import default_notifier
+            default_notifier.round_advanced(self.equb)
 
 
 class Bid(models.Model):
