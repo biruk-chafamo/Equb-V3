@@ -399,7 +399,8 @@ class EqubJoinRequest(Request):
 
     def accept(self):
         if not self.equb.is_active and self.sender:
-            self.equb.members.add(self.sender)
+            from .services.equb_service import add_member
+            add_member(self.equb, self.sender)
         else:
             raise serializers.ValidationError({"is_accepted": f"{self.equb.name} has already began"})
 
