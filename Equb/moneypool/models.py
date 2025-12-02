@@ -409,9 +409,9 @@ class EqubInviteRequest(Request):
     equb = models.ForeignKey(to=Equb, on_delete=models.CASCADE, related_name='%(class)ss')
 
     def accept(self):
-        # equb must not be active
         if not self.equb.is_active:
-            self.equb.members.add(self.receiver)
+            from .services.equb_service import add_member 
+            add_member(self.equb, self.receiver)
         else:
             raise serializers.ValidationError({"is_accepted": f"{self.equb.name} has already began"})
 
