@@ -7,6 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 
 from .models import *
+from .domain import validation
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
