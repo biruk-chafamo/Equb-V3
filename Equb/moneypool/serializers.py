@@ -110,9 +110,9 @@ class EqubSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         max_members = attrs.get('max_members')
 
-        if max_members < 2:
+        if validation.is_max_members_too_low(max_members):
             raise serializers.ValidationError({"max_members": "An equb must have at least 2 members."})
-        if max_members > 20:
+        if validation.is_max_members_too_high(max_members):
             raise serializers.ValidationError({"max_members": "An equb cannot have more than 20 members."})
         if self.instance:
             raise serializers.ValidationError({"equb": "Equbs cannot be updated once created."})
