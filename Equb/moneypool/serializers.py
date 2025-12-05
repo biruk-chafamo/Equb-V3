@@ -232,9 +232,9 @@ class BidSerializer(serializers.HyperlinkedModelSerializer):
         user = self.context.get('request').user
         equb = attrs.get('equb')
 
-        if user not in equb.members.all():
+        if not validation.is_member(user, equb.members.all()):
             raise serializers.ValidationError({"user": f'You are not a member of {equb.name}.'})
-        if user in equb.balance_manager.received.all():
+        if validation.is_member(user, equb.balance_manager.received.all()):
             raise serializers.ValidationError({"user": f'You cannot place a bid because you have already won a round for {equb.name}.'})
         if equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer place a bid in {equb.name}."})
