@@ -242,6 +242,8 @@ class BidSerializer(serializers.HyperlinkedModelSerializer):
             raise serializers.ValidationError({"equb": f"{equb.name} is not yet active."})
         if equb.is_in_payment_stage:
             raise serializers.ValidationError({"equb": f"you cannot place a bid in {equb.name} because it is in the payment stage."})
+        if validation.is_final_round(equb.balance_manager.current_round(), equb.max_members):
+            raise serializers.ValidationError({"equb": f"There is only one member left to receive the pot in {equb.name} -- bidding has no effect on the final round."})
         return attrs
     amount = serializers.DecimalField(max_digits=10, decimal_places=3, max_value=Decimal(1.000), min_value=Decimal(0.001))
     class Meta:
