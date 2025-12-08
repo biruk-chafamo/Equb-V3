@@ -263,7 +263,7 @@ class EqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
         sender = self.context.get('request').user
         equb = attrs.get('equb')
 
-        if sender in equb.members.all():
+        if validation.is_member(sender, equb.members.all()):
             raise serializers.ValidationError({"receiver": f'You are already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer request to join {equb.name}."})
