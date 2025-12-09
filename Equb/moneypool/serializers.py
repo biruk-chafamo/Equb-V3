@@ -345,9 +345,9 @@ class FriendRequestSerializer(serializers.HyperlinkedModelSerializer):
         sender = self.context.get('request').user
         receiver = attrs.get('receiver')
 
-        if sender == receiver:
+        if validation.is_self_request(sender, receiver):
             raise serializers.ValidationError({"receiver": f'you cannot send a friend request to yourself.'})
-        if receiver in sender.friends.all():
+        if validation.is_member(receiver, sender.friends.all()):
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already your friend.'})
         if FriendRequest.objects.filter(sender=sender, receiver=receiver, is_accepted=False, is_expired=False, is_rejected=False).exists():
             raise serializers.ValidationError({"receiver": f'You have already sent a friend request to {receiver.username}.'})
