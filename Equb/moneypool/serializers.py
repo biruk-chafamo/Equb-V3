@@ -398,31 +398,38 @@ class ListPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSeria
         read_only_fields = ['id', 'sender', 'receiver', 'is_accepted', 'is_rejected', 'creation_date']
 
 class PaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerializer):
+    sender = ListUserSerializer(read_only=True)
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response['payment_method'] = PaymentMethodSerializer(instance.payment_method, context=self.context).data
+        return response
 
     def validate(self, attrs):
         sender = self.context.get('request').user
-        receiver = attrs.get('receiver')
         equb = attrs.get('equb')
         round = attrs.get('round')
-        
-        # if payment method is not shared between sender and receiver then raise error
-        if not PaymentMethod.objects.filter(user=receiver, service=attrs.get('payment_method').service).exists():
-            raise serializers.ValidationError({"payment_method": "You must use a payment method that is also used by the receiver."})
+
         if not equb.is_active:
             raise serializers.ValidationError({"equb": f"{equb.name} is not yet active."})
         if equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer send payment requests for {equb.name}."})
-        if equb.balance_manager.wins.filter(round=round).count() == 0:
-            raise serializers.ValidationError({"equb": f"Payment requests cannot be sent until a winner is determined."})
+
+        win = equb.balance_manager.wins.filter(round=round).first()
+        if win is None:
+            raise serializers.ValidationError({"round": f"Payment requests cannot be sent until a winner is determined for this round."})
+        receiver = win.user
+
+        # if payment method is not shared between sender and receiver then raise error
+        if not PaymentMethod.objects.filter(user=receiver, service=attrs.get('payment_method').service).exists():
+            raise serializers.ValidationError({"payment_method": "You must use a payment method that is also used by the receiver."})
         if PaymentConfirmationRequest.objects.filter(sender=sender, receiver=receiver, equb=equb, round=round, is_accepted=False).exists():
             raise serializers.ValidationError({"receiver": f'You have an existing pending payment request to {receiver.username} for this round.'})
         if sender == receiver:
             raise serializers.ValidationError({"receiver": f'you cannot send a payment request to yourself.'})
+
+        attrs['receiver'] = receiver
         return attrs
-    
-    # service = serializers.ChoiceField(choices=ServiceChoices.choices)
-    sender = ListUserSerializer(read_only=True)
-    # payment_method = PaymentMethodSerializer()
 
     class Meta:
         model = PaymentConfirmationRequest
