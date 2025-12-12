@@ -379,7 +379,7 @@ class AddressPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSe
     payment_method = PaymentMethodSerializer(read_only=True)
 
     def validate(self, attrs):
-        if attrs.get('is_accepted') and attrs.get('is_rejected'):
+        if validation.is_accept_and_reject_conflict(attrs.get('is_accepted'), attrs.get('is_rejected')):
             raise serializers.ValidationError({"is_accepted": "You cannot accept and reject a payment request."})
         return attrs
 
