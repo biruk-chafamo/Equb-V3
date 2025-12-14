@@ -20,6 +20,8 @@ from enum import Enum
 from .serializers import *
 from .models import *
 from .permissions import *
+from .services import equb_service
+from .adapters.django_notifier import default_notifier
 
 
 class AuthPlatform(Enum):
