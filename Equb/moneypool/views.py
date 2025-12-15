@@ -184,8 +184,9 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         return combined_equbs.distinct()
         
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-        
+        equb = equb_service.create_equb(creator=self.request.user, **serializer.validated_data)
+        serializer.instance = equb
+
     @action(detail=False, methods=['get'], url_path='activeequbs')
     def active_equbs(self, request):
         """
