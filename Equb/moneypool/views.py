@@ -278,10 +278,12 @@ class BidViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         return Bid.objects.filter(equb__in=equbs) # all bids that belong to equbs joined by current user
 
     def perform_create(self, serializer):
-        serializer.save(
-            user=self.request.user, date=timezone.now(), 
-            round=serializer.validated_data['equb'].balance_manager.finished_rounds + 1
+        bid = equb_service.place_bid(
+            user=self.request.user,
+            equb=serializer.validated_data['equb'],
+            amount=serializer.validated_data['amount'],
         )
+        serializer.instance = bid
 
 
 class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
