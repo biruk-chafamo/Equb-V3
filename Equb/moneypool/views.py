@@ -397,24 +397,24 @@ class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, v
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
             return AddressPaymentConfirmationRequestSerializer
+        elif self.request.method in ['POST']:
+            return PaymentConfirmationRequestSerializer
         else:
             return ListPaymentConfirmationRequestSerializer
 
     def perform_create(self, serializer):
         balance_manager = serializer.validated_data['equb'].balance_manager
         round = serializer.validated_data['round']
-        payment_method = serializer.validated_data['payment_method']
-        
+
         sender = self.request.user
         amount = balance_manager.calculate_losers_deductions(sender, round)
-        # payment_method = sender.selected_payment_methods.get(service=service)
-        
+
         serializer.save(
             sender=sender,
-            receiver=balance_manager.wins.get(round=round).user,
+            receiver=serializer.validated_data['receiver'],
             amount=amount,
-            payment_method=payment_method
         )
+        default_notifier.payment_confirmation_requested(serializer.instance)
 
     @action(detail=False, methods=['get'], url_path='by-equb-round')
     def get_by_equb_and_round(self, request):
