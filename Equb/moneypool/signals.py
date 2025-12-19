@@ -1,22 +1,17 @@
-from django.db.models.signals import post_save, pre_save, m2m_changed
-from django.dispatch import receiver, Signal
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.conf import settings
-from django.utils import timezone
-import datetime
 import logging
-from asgiref.sync import async_to_sync
 
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
 from django_rest_passwordreset.signals import reset_password_token_created
-from channels.layers import get_channel_layer
 
 from guardian.shortcuts import assign_perm
 
 from .models import *
-from .tasks import select_winner_task
 
 logger = logging.getLogger(__name__)
 
