@@ -45,7 +45,7 @@ def assign_equb_invite_request_perm(sender, instance, created, **kwargs):
         assign_perm('change_equbinviterequest', equb_request.receiver, equb_request)
 
 @receiver(signal=post_save, sender=PaymentMethod)
-def assign_equb_join_request_perm(sender, instance, created, **kwargs):
+def assign_payment_method_perm(sender, instance, created, **kwargs):
     payment_method = instance
     if created:
         assign_perm('moneypool.change_paymentmethod', payment_method.user)
