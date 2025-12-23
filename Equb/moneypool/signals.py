@@ -71,7 +71,7 @@ def assign_payment_confirmation_request_perm(sender, instance, created, **kwargs
 @receiver(reset_password_token_created)
 def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
 
-    
+
     context = {
         'current_user': reset_password_token.user,
         'username': reset_password_token.user.username,
