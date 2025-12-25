@@ -8,3 +8,6 @@ from .ports.scheduler import Scheduler
 class RecordingLiveUpdates(LiveUpdates):
     """Records pushed equb ids."""
 
+    def __init__(self):
+        self.equb_ids = []
+
