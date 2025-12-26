@@ -11,3 +11,7 @@ class RecordingLiveUpdates(LiveUpdates):
     def __init__(self):
         self.equb_ids = []
 
+    def equb_updated(self, equb_id) -> None:
+        self.equb_ids.append(equb_id)
+
+
