@@ -15,3 +15,6 @@ class RecordingLiveUpdates(LiveUpdates):
         self.equb_ids.append(equb_id)
 
 
+class RecordingScheduler(Scheduler):
+    """Records (equb_name, when) pairs."""
+
