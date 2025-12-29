@@ -18,3 +18,6 @@ class RecordingLiveUpdates(LiveUpdates):
 class RecordingScheduler(Scheduler):
     """Records (equb_name, when) pairs."""
 
+    def __init__(self):
+        self.scheduled = []
+
