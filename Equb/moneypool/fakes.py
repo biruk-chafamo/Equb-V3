@@ -21,3 +21,7 @@ class RecordingScheduler(Scheduler):
     def __init__(self):
         self.scheduled = []
 
+    def schedule_winner_selection(self, equb_name: str, when: datetime.datetime) -> None:
+        self.scheduled.append((equb_name, when))
+
+
