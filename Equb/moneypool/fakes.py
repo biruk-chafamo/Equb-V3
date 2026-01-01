@@ -25,3 +25,8 @@ class RecordingScheduler(Scheduler):
         self.scheduled.append((equb_name, when))
 
 
+class FixedClock(Clock):
+    """
+    Pair with RecordingScheduler to assert the exact next-round deadline
+    """
+
