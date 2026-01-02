@@ -30,3 +30,6 @@ class FixedClock(Clock):
     Pair with RecordingScheduler to assert the exact next-round deadline
     """
 
+    def __init__(self, fixed_now: datetime.datetime):
+        self.fixed_now = fixed_now
+
