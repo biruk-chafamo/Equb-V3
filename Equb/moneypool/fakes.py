@@ -33,3 +33,5 @@ class FixedClock(Clock):
     def __init__(self, fixed_now: datetime.datetime):
         self.fixed_now = fixed_now
 
+    def now(self) -> datetime.datetime:
+        return self.fixed_now
