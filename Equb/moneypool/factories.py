@@ -28,3 +28,10 @@ class UserFactory(DjangoModelFactory):
     last_name = factory.Sequence(lambda n: f"Last{n}")
     bank_account = Decimal("0.00")
 
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        password = kwargs.pop("password", "test_password")
+        manager = cls._get_manager(model_class)
+        return manager.create_user(*args, password=password, **kwargs)
+
+
