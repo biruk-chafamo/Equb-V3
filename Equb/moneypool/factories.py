@@ -35,3 +35,12 @@ class UserFactory(DjangoModelFactory):
         return manager.create_user(*args, password=password, **kwargs)
 
 
+class PaymentMethodFactory(DjangoModelFactory):
+    class Meta:
+        model = PaymentMethod
+
+    user = factory.SubFactory(UserFactory)
+    service = ServiceChoices.CASH
+    detail = ""
+
+
