@@ -44,3 +44,14 @@ class PaymentMethodFactory(DjangoModelFactory):
     detail = ""
 
 
+class EqubFactory(DjangoModelFactory):
+    class Meta:
+        model = Equb
+
+    name = factory.Sequence(lambda n: f"test_equb_{n}")
+    amount = Decimal("100.00")
+    max_members = 2
+    cycle = datetime.timedelta(minutes=10)
+    creator = factory.SubFactory(UserFactory)
+    is_private = False
+
