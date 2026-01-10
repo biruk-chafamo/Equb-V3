@@ -55,3 +55,10 @@ class EqubFactory(DjangoModelFactory):
     creator = factory.SubFactory(UserFactory)
     is_private = False
 
+    @classmethod
+    def _create(cls, model_class, *args, **kwargs):
+        from .services.equb_service import create_equb
+
+        return create_equb(**kwargs)
+
+
