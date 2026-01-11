@@ -62,3 +62,13 @@ class EqubFactory(DjangoModelFactory):
         return create_equb(**kwargs)
 
 
+class BidFactory(DjangoModelFactory):
+    class Meta:
+        model = Bid
+
+    equb = factory.SubFactory(EqubFactory)
+    user = factory.SubFactory(UserFactory)
+    amount = Decimal("0.100")
+    round = 1
+
+
