@@ -72,3 +72,11 @@ class BidFactory(DjangoModelFactory):
     round = 1
 
 
+class FriendRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = FriendRequest
+
+    sender = factory.SubFactory(UserFactory)
+    receiver = factory.SubFactory(UserFactory)
+
+
