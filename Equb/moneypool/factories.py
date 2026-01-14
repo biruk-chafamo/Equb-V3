@@ -89,3 +89,12 @@ class EqubJoinRequestFactory(DjangoModelFactory):
     equb = factory.SubFactory(EqubFactory)
 
 
+class EqubInviteRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = EqubInviteRequest
+
+    sender = factory.SubFactory(UserFactory)
+    receiver = factory.SubFactory(UserFactory)
+    equb = factory.SubFactory(EqubFactory)
+
+
