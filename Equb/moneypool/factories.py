@@ -80,3 +80,12 @@ class FriendRequestFactory(DjangoModelFactory):
     receiver = factory.SubFactory(UserFactory)
 
 
+class EqubJoinRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = EqubJoinRequest
+
+    sender = factory.SubFactory(UserFactory)
+    receiver = factory.SubFactory(UserFactory)
+    equb = factory.SubFactory(EqubFactory)
+
+
