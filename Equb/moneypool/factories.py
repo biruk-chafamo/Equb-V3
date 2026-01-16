@@ -98,3 +98,14 @@ class EqubInviteRequestFactory(DjangoModelFactory):
     equb = factory.SubFactory(EqubFactory)
 
 
+class PaymentConfirmationRequestFactory(DjangoModelFactory):
+    class Meta:
+        model = PaymentConfirmationRequest
+
+    sender = factory.SubFactory(UserFactory)
+    receiver = factory.SubFactory(UserFactory)
+    equb = factory.SubFactory(EqubFactory)
+    payment_method = factory.SubFactory(PaymentMethodFactory)
+    round = 1
+
+
