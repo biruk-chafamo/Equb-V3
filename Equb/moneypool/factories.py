@@ -109,3 +109,17 @@ class PaymentConfirmationRequestFactory(DjangoModelFactory):
     round = 1
 
 
+def make_full_equb_via_join_requests(max_members=2, amount=Decimal("100.00")):
+    equb = EqubFactory(max_members=max_members, amount=amount)
+    members = [equb.creator]
+    for _ in range(max_members - 1):
+        member = UserFactory()
+        join_request = EqubJoinRequestFactory(equb=equb, sender=member, receiver=equb.creator)
+        # Note: accepting one's own join request would not have been allowed via an API request
+        join_request.is_accepted = True
+        join_request.save()
+        members.append(member)
+    equb.refresh_from_db()
+    return equb, members
+
+
