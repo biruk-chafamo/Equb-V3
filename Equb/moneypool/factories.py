@@ -123,3 +123,12 @@ def make_full_equb_via_join_requests(max_members=2, amount=Decimal("100.00")):
     return equb, members
 
 
+def make_full_equb_via_add_member(max_members):
+    equb = EqubFactory(max_members=max_members)
+    members = [equb.creator]
+    for _ in range(max_members - 1):
+        member = UserFactory()
+        add_member(equb, member)
+        members.append(member)
+    equb.refresh_from_db()
+    return equb, members
