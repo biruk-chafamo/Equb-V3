@@ -43,4 +43,4 @@ This starts:
 
 ## Related
 
-- **Frontend:** [equb_v3_frontend](https://github.com/biruk-chafamo/equb_v3_frontend)
+- **Frontend:** [equb_frontend](https://github.com/biruk-chafamo/Equb-Frontend)
