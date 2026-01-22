@@ -11,3 +11,8 @@ def api_client():
     return APIClient()
 
 
+@pytest.fixture
+def live_updates():
+    return RecordingLiveUpdates()
+
+
