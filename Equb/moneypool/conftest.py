@@ -21,3 +21,8 @@ def scheduler():
     return RecordingScheduler()
 
 
+@pytest.fixture
+def notifier(live_updates, scheduler):
+    return DjangoNotifier(live_updates=live_updates, scheduler=scheduler)
+
+
