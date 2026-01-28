@@ -20,3 +20,9 @@ def test_user_factory_creates_usable_login():
     assert user.selected_payment_methods.count() == 1
 
 
+@pytest.mark.django_db
+def test_payment_method_factory():
+    pm = PaymentMethodFactory()
+    assert pm.user_id is not None
+
+
