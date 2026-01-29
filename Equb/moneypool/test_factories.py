@@ -26,3 +26,13 @@ def test_payment_method_factory():
     assert pm.user_id is not None
 
 
+@pytest.mark.django_db
+def test_equb_factory_triggers_balance_manager_and_highest_bid():
+    equb = EqubFactory()
+    # signals.py::new_equb_action auto-creates these on Equb creation
+    assert equb.balance_manager is not None
+    assert equb.highest_bids.get(round=1) is not None
+    # signals.py::set_creator_membership adds creator as a member
+    assert equb.creator in equb.members.all()
+
+
