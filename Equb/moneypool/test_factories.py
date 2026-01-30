@@ -36,3 +36,10 @@ def test_equb_factory_triggers_balance_manager_and_highest_bid():
     assert equb.creator in equb.members.all()
 
 
+@pytest.mark.django_db
+def test_bid_factory():
+    bid = BidFactory()
+    assert bid.equb is not None
+    assert bid.user is not None
+
+
