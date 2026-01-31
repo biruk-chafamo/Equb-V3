@@ -43,3 +43,9 @@ def test_bid_factory():
     assert bid.user is not None
 
 
+@pytest.mark.django_db
+def test_request_factories():
+    assert FriendRequestFactory().sender is not None
+    assert EqubJoinRequestFactory().equb is not None
+    assert EqubInviteRequestFactory().equb is not None
+    assert PaymentConfirmationRequestFactory().payment_method is not None
