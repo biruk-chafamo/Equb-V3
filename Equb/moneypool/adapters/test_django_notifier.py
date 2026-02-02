@@ -27,3 +27,8 @@ def live_updates():
     return RecordingLiveUpdates()
 
 
+@pytest.fixture
+def scheduler():
+    return RecordingScheduler()
+
+
