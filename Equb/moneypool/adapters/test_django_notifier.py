@@ -32,3 +32,10 @@ def scheduler():
     return RecordingScheduler()
 
 
+@pytest.fixture
+def notifier(live_updates, scheduler):
+    return DjangoNotifier(
+        clock=FixedClock(FIXED_NOW), live_updates=live_updates, scheduler=scheduler
+    )
+
+
