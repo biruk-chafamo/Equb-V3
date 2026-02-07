@@ -61,3 +61,13 @@ class TestEqubCreated:
         assert notified.count() == friend_count
         assert set(notified.values_list("receiver", flat=True)) == {f.id for f in friends}
 
+    def test_private_equb_notifies_nobody(self, notifier):
+        creator = UserFactory()
+        creator.friends.add(UserFactory())
+        equb = EqubFactory(creator=creator, is_private=True)
+
+        notifier.equb_created(equb)
+
+        assert NewEqubNotification.objects.filter(equb=equb).count() == 0
+
+
