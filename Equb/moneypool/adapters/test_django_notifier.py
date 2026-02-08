@@ -71,3 +71,19 @@ class TestEqubCreated:
         assert NewEqubNotification.objects.filter(equb=equb).count() == 0
 
 
+@pytest.mark.django_db
+class TestMemberJoined:
+    def test_notifies_prior_members_only(self, notifier):
+        equb = EqubFactory(max_members=3)
+        new_member = UserFactory()
+        equb.members.add(new_member)
+
+        notifier.member_joined(equb, new_member)
+
+        receivers = set(
+            NewMemberNotification.objects.filter(equb=equb).values_list("receiver", flat=True)
+        )
+        assert receivers == {equb.creator.id}
+        assert new_member.id not in receivers
+
+
