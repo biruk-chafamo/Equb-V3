@@ -87,3 +87,13 @@ class TestMemberJoined:
         assert new_member.id not in receivers
 
 
+@pytest.mark.django_db
+class TestSchedulingEvents:
+    def test_activation_schedules_winner_selection_one_cycle_out(self, notifier, scheduler):
+        cycle = datetime.timedelta(minutes=10)
+        equb = EqubFactory(cycle=cycle)
+
+        notifier.equb_activated(equb)
+
+        assert scheduler.scheduled == [(equb.name, FIXED_NOW + cycle)]
+
