@@ -97,3 +97,17 @@ class TestSchedulingEvents:
 
         assert scheduler.scheduled == [(equb.name, FIXED_NOW + cycle)]
 
+    def test_round_advanced_notifies_members_and_schedules_the_next_round(self, notifier, scheduler):
+        #TODO: move next round scheduling out of the notifier
+        equb = EqubFactory(max_members=2, cycle=datetime.timedelta(hours=2))
+        equb.members.add(UserFactory())
+
+        notifier.round_advanced(equb)
+
+        receivers = set(
+            NewRoundNotification.objects.filter(equb=equb).values_list("receiver", flat=True)
+        )
+        assert receivers == {m.id for m in equb.members.all()}
+        assert scheduler.scheduled == [(equb.name, FIXED_NOW + datetime.timedelta(hours=2))]
+
+
