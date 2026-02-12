@@ -111,3 +111,20 @@ class TestSchedulingEvents:
         assert scheduler.scheduled == [(equb.name, FIXED_NOW + datetime.timedelta(hours=2))]
 
 
+@pytest.mark.django_db
+class TestBidOutbid:
+    def test_notifies_every_member_and_pushes_one_live_update(self, notifier, live_updates):
+        equb = EqubFactory(max_members=2)
+        equb.members.add(UserFactory())
+        members = list(equb.members.all())
+        previous = BidFactory(equb=equb, user=members[0], amount=Decimal("0.100"))
+        new_bid = BidFactory(equb=equb, user=members[1], amount=Decimal("0.200"))
+
+        notifier.bid_outbid(equb, previous, new_bid)
+
+        rows = OutBidNotification.objects.filter(equb=equb)
+        assert set(rows.values_list("receiver", flat=True)) == {m.id for m in members}
+        assert all(r.previous_highest_bid == previous for r in rows)
+        assert all(r.new_highest_bid == new_bid for r in rows)
+        assert live_updates.equb_ids == [equb.id]
+
