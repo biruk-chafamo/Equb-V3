@@ -128,3 +128,16 @@ class TestBidOutbid:
         assert all(r.new_highest_bid == new_bid for r in rows)
         assert live_updates.equb_ids == [equb.id]
 
+    def test_tolerates_no_previous_highest_bid(self, notifier, live_updates):
+        equb = EqubFactory(max_members=2)
+        bidder = equb.creator
+        new_bid = BidFactory(equb=equb, user=bidder, amount=Decimal("0.100"))
+
+        notifier.bid_outbid(equb, None, new_bid)
+
+        rows = OutBidNotification.objects.filter(equb=equb)
+        assert rows.exists()
+        assert all(r.previous_highest_bid is None for r in rows)
+        assert live_updates.equb_ids == [equb.id]
+
+
