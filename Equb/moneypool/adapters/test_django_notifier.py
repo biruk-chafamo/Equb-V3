@@ -141,3 +141,12 @@ class TestBidOutbid:
         assert live_updates.equb_ids == [equb.id]
 
 
+@pytest.mark.django_db
+class TestPaymentConfirmationRequested:
+    def test_notifies_the_receiver_of_the_request(self, notifier):
+        request = PaymentConfirmationRequestFactory()
+
+        notifier.payment_confirmation_requested(request)
+
+        rows = NewPaymentConfirmationRequestNotification.objects.filter(equb=request.equb)
+        assert list(rows.values_list("receiver", flat=True)) == [request.receiver.id]
