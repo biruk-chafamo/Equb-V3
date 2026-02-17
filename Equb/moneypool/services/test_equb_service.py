@@ -34,3 +34,19 @@ class TestCreateEqub:
         # the creator announces to friends, and is not announced to
         assert creator.id not in set(notified.values_list("receiver", flat=True))
 
+    def test_private_equb_creation_does_not_notify(self, notifier):
+        creator = UserFactory()
+        creator.friends.add(UserFactory())
+
+        equb = create_equb(
+            creator=creator,
+            name="svc_test_equb",
+            amount=Decimal("100.00"),
+            max_members=2,
+            cycle=datetime.timedelta(minutes=10),
+            notifier=notifier,
+            is_private=True,
+        )
+
+        assert NewEqubNotification.objects.filter(equb=equb).count() == 0
+
