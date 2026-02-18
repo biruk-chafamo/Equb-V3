@@ -50,3 +50,19 @@ class TestCreateEqub:
 
         assert NewEqubNotification.objects.filter(equb=equb).count() == 0
 
+    def test_creation_neither_pushes_nor_schedules(self, notifier, live_updates, scheduler):
+        creator = UserFactory()
+        creator.friends.add(UserFactory())
+
+        create_equb(
+            creator=creator,
+            name="svc_test_equb",
+            amount=Decimal("100.00"),
+            max_members=2,
+            cycle=datetime.timedelta(minutes=10),
+            notifier=notifier,
+        )
+
+        assert live_updates.equb_ids == []
+        assert scheduler.scheduled == []
+
