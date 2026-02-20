@@ -66,3 +66,18 @@ class TestCreateEqub:
         assert live_updates.equb_ids == []
         assert scheduler.scheduled == []
 
+    def test_still_sets_up_structural_invariants(self, notifier):
+        creator = UserFactory()
+        equb = create_equb(
+            creator=creator,
+            name="svc_test_equb_2",
+            amount=Decimal("100.00"),
+            max_members=2,
+            cycle=datetime.timedelta(minutes=10),
+            notifier=notifier,
+        )
+        assert equb.balance_manager is not None
+        assert equb.highest_bids.get(round=1) is not None
+        assert creator in equb.members.all()
+
+
