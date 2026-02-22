@@ -81,3 +81,21 @@ class TestCreateEqub:
         assert creator in equb.members.all()
 
 
+@pytest.mark.django_db
+class TestAddMember:
+    def test_notifies_existing_members_without_activating_when_not_full(self, notifier, scheduler):
+        equb = EqubFactory(max_members=3)
+        new_member = UserFactory()
+
+        add_member(equb, new_member, notifier=notifier)
+
+        notified = NewMemberNotification.objects.filter(equb=equb)
+        # every member except the one who just joined
+        assert set(notified.values_list("receiver", flat=True)) == {equb.creator.id}
+        assert notified.first().new_member == new_member
+
+        equb.refresh_from_db()
+        assert equb.is_active is False
+        assert scheduler.scheduled == []
+
+
