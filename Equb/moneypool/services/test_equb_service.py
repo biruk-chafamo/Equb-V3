@@ -99,3 +99,22 @@ class TestAddMember:
         assert scheduler.scheduled == []
 
 
+@pytest.mark.django_db
+class TestSetupNextRoundClockInjection:
+    def test_filling_the_equb_activates_it_and_schedules_the_first_round(self, live_updates):
+        equb = EqubFactory(max_members=2, cycle=datetime.timedelta(minutes=10))
+        new_member = UserFactory()
+
+        fixed_now = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
+        clock = FixedClock(fixed_now)
+        scheduler = RecordingScheduler()
+        notifier = DjangoNotifier(clock=clock, live_updates=live_updates, scheduler=scheduler)
+
+        add_member(equb, new_member, notifier=notifier, clock=clock)
+
+        equb.refresh_from_db()
+        assert equb.is_active is True
+        assert scheduler.scheduled == [(equb.name, fixed_now + datetime.timedelta(minutes=10))]
+        assert equb.balance_manager.current_round_start_date == fixed_now
+
+
