@@ -118,3 +118,18 @@ class TestSetupNextRoundClockInjection:
         assert equb.balance_manager.current_round_start_date == fixed_now
 
 
+@pytest.mark.django_db
+class TestPlaceBid:
+    def test_first_bid_notifies_every_member_and_pushes_a_live_update(self, notifier, live_updates):
+        equb = EqubFactory(max_members=2)
+        members = list(equb.members.all())
+        bidder = members[0]
+
+        bid = place_bid(bidder, equb, Decimal("0.100"), notifier=notifier)
+
+        notified = OutBidNotification.objects.filter(equb=equb)
+        assert set(notified.values_list("receiver", flat=True)) == {m.id for m in members}
+        assert all(n.previous_highest_bid is None for n in notified)
+        assert all(n.new_highest_bid == bid for n in notified)
+        assert live_updates.equb_ids == [equb.id]
+
