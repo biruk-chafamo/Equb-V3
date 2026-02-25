@@ -133,3 +133,15 @@ class TestPlaceBid:
         assert all(n.new_highest_bid == bid for n in notified)
         assert live_updates.equb_ids == [equb.id]
 
+    def test_lower_bid_neither_notifies_nor_pushes(self, notifier, live_updates):
+        equb = EqubFactory(max_members=3)
+        members = list(equb.members.all())
+        place_bid(members[0], equb, Decimal("0.500"), notifier=notifier)
+
+        rows_after_first_bid = OutBidNotification.objects.filter(equb=equb).count()
+        live_updates.equb_ids.clear()
+
+        place_bid(members[0], equb, Decimal("0.100"), notifier=notifier)
+
+        assert OutBidNotification.objects.filter(equb=equb).count() == rows_after_first_bid
+        assert live_updates.equb_ids == []
