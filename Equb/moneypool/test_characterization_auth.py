@@ -39,3 +39,18 @@ class TestRegister:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "email" in response.json()
 
+    def test_register_password_mismatch_rejected(self, api_client):
+        data = {
+            "username": "mismatch_user",
+            "first_name": "A",
+            "last_name": "B",
+            "email": "mismatch@example.com",
+            "password": "a-Str0ng-password!",
+            "password2": "different-password!",
+        }
+        response = api_client.post(reverse("user-list"), data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "password" in response.json()
+
+
