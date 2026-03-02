@@ -54,3 +54,21 @@ class TestRegister:
         assert "password" in response.json()
 
 
+@pytest.mark.django_db
+class TestTokenAuth:
+    def test_obtain_and_refresh_token(self, api_client):
+        UserFactory(username="token_user", password="a-Str0ng-password!")
+
+        response = api_client.post(
+            reverse("token_obtain_pair"),
+            {"username": "token_user", "password": "a-Str0ng-password!"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        refresh_token = response.json()["refresh"]
+
+        refresh_response = api_client.post(
+            reverse("token_refresh"), {"refresh": refresh_token}
+        )
+        assert refresh_response.status_code == status.HTTP_200_OK
+        assert "access" in refresh_response.json()
+
