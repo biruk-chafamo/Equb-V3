@@ -72,3 +72,13 @@ class TestTokenAuth:
         assert refresh_response.status_code == status.HTTP_200_OK
         assert "access" in refresh_response.json()
 
+    def test_obtain_token_wrong_password_rejected(self, api_client):
+        UserFactory(username="token_user_2", password="a-Str0ng-password!")
+
+        response = api_client.post(
+            reverse("token_obtain_pair"),
+            {"username": "token_user_2", "password": "wrong-password"},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
