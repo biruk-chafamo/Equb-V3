@@ -82,3 +82,17 @@ class TestTokenAuth:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
+@pytest.mark.django_db
+class TestCheckSigninMethod:
+    def test_existing_password_user(self, api_client):
+        UserFactory(email="pw_user@example.com")
+        response = api_client.post(
+            reverse("check_signin_method"), {"email": "pw_user@example.com"}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        body = response.json()
+        assert body["exists"] is True
+        assert body["has_password"] is True
+        assert body["has_google_signin"] is False
+        assert body["primary_method"] == "password"
+
