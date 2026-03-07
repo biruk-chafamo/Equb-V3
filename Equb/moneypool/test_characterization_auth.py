@@ -96,3 +96,10 @@ class TestCheckSigninMethod:
         assert body["has_google_signin"] is False
         assert body["primary_method"] == "password"
 
+    def test_nonexistent_email(self, api_client):
+        response = api_client.post(
+            reverse("check_signin_method"), {"email": "nobody@example.com"}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["exists"] is False
+
