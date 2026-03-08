@@ -103,3 +103,8 @@ class TestCheckSigninMethod:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["exists"] is False
 
+    def test_missing_email_rejected(self, api_client):
+        response = api_client.post(reverse("check_signin_method"), {})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
