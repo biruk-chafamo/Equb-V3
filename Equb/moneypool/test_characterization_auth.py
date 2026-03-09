@@ -108,3 +108,14 @@ class TestCheckSigninMethod:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.django_db
+class TestSmartPasswordReset:
+    def test_reset_for_password_user_succeeds(self, api_client, mailoutbox):
+        user = UserFactory(email="reset_target@example.com")
+        response = api_client.post(
+            reverse("smart_password_reset"), {"email": user.email}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["signin_method"] == "password"
+        assert len(mailoutbox) == 1
+
