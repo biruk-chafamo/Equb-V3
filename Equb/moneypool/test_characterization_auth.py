@@ -119,3 +119,17 @@ class TestSmartPasswordReset:
         assert response.json()["signin_method"] == "password"
         assert len(mailoutbox) == 1
 
+    def test_reset_for_nonexistent_email_does_not_leak_existence(self, api_client):
+        # TODO: an attacker can easily reverse engineer their way into knowing 
+        # whether an email belongs to an account or not. For example, they can
+        # create an account with their own email, then request a password reset,
+        # see the message (which is diff from that sent for non-existing emails) 
+        # and then infer the rest about existence/non-existence. 
+        # See test_request_reset_token_for_unknown_email below
+        response = api_client.post(
+            reverse("smart_password_reset"), {"email": "ghost@example.com"}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert "exists" not in response.json()
+
+
