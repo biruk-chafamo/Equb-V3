@@ -133,3 +133,12 @@ class TestSmartPasswordReset:
         assert "exists" not in response.json()
 
 
+@pytest.mark.django_db
+class TestPasswordResetFlow:
+    def test_request_reset_token(self, api_client):
+        user = UserFactory(email="pwreset_flow@example.com")
+        response = api_client.post(
+            reverse("password_reset:reset-password-request"), {"email": user.email}
+        )
+        assert response.status_code == status.HTTP_200_OK
+
