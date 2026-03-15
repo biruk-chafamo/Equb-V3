@@ -142,3 +142,11 @@ class TestPasswordResetFlow:
         )
         assert response.status_code == status.HTTP_200_OK
 
+    def test_request_reset_token_for_unknown_email(self, api_client):
+        response = api_client.post(
+            reverse("password_reset:reset-password-request"),
+            {"email": "unknown@example.com"},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
