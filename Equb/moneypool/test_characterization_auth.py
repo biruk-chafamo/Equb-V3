@@ -150,3 +150,11 @@ class TestPasswordResetFlow:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.django_db
+class TestGoogleAuthSmoke:
+    def test_invalid_id_token_rejected(self, api_client):
+        response = api_client.post(
+            reverse("google_auth"), {"id_token": "not-a-real-token"}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
