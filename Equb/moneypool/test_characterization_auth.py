@@ -158,3 +158,6 @@ class TestGoogleAuthSmoke:
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_missing_id_token_rejected(self, api_client):
+        response = api_client.post(reverse("google_auth"), {})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
