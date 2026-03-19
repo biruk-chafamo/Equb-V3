@@ -27,3 +27,13 @@ class TestCreateEqub:
         assert body["is_completed"] is False
         assert len(body["members"]) == 1
 
+    def test_create_equb_requires_authentication(self, api_client):
+        data = {
+            "name": "unauthed_equb",
+            "max_members": 2,
+            "amount": "100.00",
+            "cycle": "00:10:00",
+        }
+        response = api_client.post(reverse("equb-list"), data)
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
