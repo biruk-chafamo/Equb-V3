@@ -50,3 +50,15 @@ class TestCreateEqub:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "max_members" in response.json()
 
+    def test_create_equb_cycle_below_minimum_rejected(self, make_authed_client):
+        client = make_authed_client()
+        data = {
+            "name": "too_short_cycle",
+            "max_members": 2,
+            "amount": "100.00",
+            "cycle": "00:00:30",  # below the 1-minute serializer minimum
+        }
+        response = client.post(reverse("equb-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
