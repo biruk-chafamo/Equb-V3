@@ -62,3 +62,12 @@ class TestCreateEqub:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+@pytest.mark.django_db
+class TestRetrieveAndUpdateEqub:
+    def test_member_can_retrieve_equb(self, make_authed_client):
+        equb = EqubFactory()
+        client = make_authed_client(equb.creator)
+        response = client.get(reverse("equb-detail", args=[equb.pk]))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["name"] == equb.name
+
