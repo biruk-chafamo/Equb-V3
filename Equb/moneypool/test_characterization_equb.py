@@ -71,3 +71,17 @@ class TestRetrieveAndUpdateEqub:
         assert response.status_code == status.HTTP_200_OK
         assert response.json()["name"] == equb.name
 
+    def test_non_member_non_invitee_cannot_retrieve_equb(self, make_authed_client):
+        """
+        equbs should only be visible to:
+            - members 
+            - invitees 
+            - friends of the equb creator (if the equb is public)
+        """
+        equb = EqubFactory()
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.get(reverse("equb-detail", args=[equb.pk]))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
