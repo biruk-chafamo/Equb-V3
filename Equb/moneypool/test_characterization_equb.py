@@ -85,3 +85,14 @@ class TestRetrieveAndUpdateEqub:
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+@pytest.mark.django_db
+class TestEqubListingActions:
+    def test_by_user_returns_their_public_equbs(self, make_authed_client):
+        owner = UserFactory()
+        EqubFactory(creator=owner, is_private=False, name="public_by_user_equb")
+        client = make_authed_client()
+        response = client.get(reverse("equb-by-user"), {"user": owner.pk})
+        assert response.status_code == status.HTTP_200_OK
+        names = [e["name"] for e in response.json()]
+        assert "public_by_user_equb" in names
+
