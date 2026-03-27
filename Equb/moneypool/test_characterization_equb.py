@@ -96,3 +96,12 @@ class TestEqubListingActions:
         names = [e["name"] for e in response.json()]
         assert "public_by_user_equb" in names
 
+    def test_invited_equbs_lists_pending_invites(self, make_authed_client):
+        invitee = UserFactory()
+        invite = EqubInviteRequestFactory(receiver=invitee)
+        client = make_authed_client(invitee)
+        response = client.get(reverse("equb-invited-equbs"))
+        assert response.status_code == status.HTTP_200_OK
+        names = [e["name"] for e in response.json()]
+        assert invite.equb.name in names
+
