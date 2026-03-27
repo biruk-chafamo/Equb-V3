@@ -105,3 +105,8 @@ class TestEqubListingActions:
         names = [e["name"] for e in response.json()]
         assert invite.equb.name in names
 
+    def test_active_equbs_empty_for_new_user(self, make_authed_client):
+        client = make_authed_client()
+        response = client.get(reverse("equb-active-equbs"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
