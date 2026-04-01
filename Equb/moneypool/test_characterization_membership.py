@@ -44,3 +44,16 @@ class TestEqubInviteRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
         
+    def test_cannot_invite_existing_member(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        invitee = UserFactory()
+        add_member(equb, invitee)
+        client = make_authed_client(equb.creator)
+        data = {
+            "equb": reverse("equb-detail", args=[equb.pk]),
+            "receiver": reverse("user-detail", args=[invitee.pk]),
+        }
+        response = client.post(reverse("equbinviterequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
