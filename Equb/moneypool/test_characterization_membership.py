@@ -57,3 +57,16 @@ class TestEqubInviteRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
 
+    def test_duplicate_pending_invite_rejected(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        invitee = UserFactory()
+        EqubInviteRequestFactory(equb=equb, receiver=invitee, sender=equb.creator)
+        client = make_authed_client(equb.creator)
+        data = {
+            "equb": reverse("equb-detail", args=[equb.pk]),
+            "receiver": reverse("user-detail", args=[invitee.pk]),
+        }
+        response = client.post(reverse("equbinviterequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
