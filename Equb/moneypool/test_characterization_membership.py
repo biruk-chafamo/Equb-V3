@@ -82,3 +82,15 @@ class TestEqubInviteRequest:
         equb.refresh_from_db()
         assert invitee in equb.members.all()
 
+    def test_reject_invite_does_not_add_member(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        invitee = UserFactory()
+        invite = EqubInviteRequestFactory(equb=equb, receiver=invitee, sender=equb.creator)
+        client = make_authed_client(invitee)
+        response = client.patch(
+            reverse("equbinviterequest-detail", args=[invite.pk]), {"is_rejected": True}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        equb.refresh_from_db()
+        assert invitee not in equb.members.all()
+
