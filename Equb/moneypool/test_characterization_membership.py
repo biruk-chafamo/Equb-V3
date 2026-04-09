@@ -104,3 +104,13 @@ class TestEqubInviteRequest:
         )
         assert response.status_code == status.HTTP_200_OK
 
+    def test_sender_cannot_accept_invite(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        invitee = UserFactory()
+        invite = EqubInviteRequestFactory(equb=equb, receiver=invitee, sender=equb.creator)
+        client = make_authed_client(equb.creator)
+        response = client.patch(
+            reverse("equbinviterequest-detail", args=[invite.pk]), {"is_accepted": True}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
