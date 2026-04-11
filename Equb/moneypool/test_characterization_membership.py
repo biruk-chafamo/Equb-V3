@@ -125,3 +125,16 @@ class TestEqubInviteRequest:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_full_equb_activates_once_max_members_reached(self, make_authed_client):
+        equb = EqubFactory(max_members=2)
+        invitee = UserFactory()
+        invite = EqubInviteRequestFactory(equb=equb, receiver=invitee, sender=equb.creator)
+        client = make_authed_client(invitee)
+        client.patch(
+            reverse("equbinviterequest-detail", args=[invite.pk]), {"is_accepted": True}
+        )
+        equb.refresh_from_db()
+        assert equb.is_active is True
+        assert equb.balance_manager.finished_rounds == 0
+        assert equb.balance_manager.start_date is not None
+
