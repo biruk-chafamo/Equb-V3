@@ -143,3 +143,13 @@ class TestEqubInviteRequest:
         pass
         
 
+@pytest.mark.django_db
+class TestEqubJoinRequest:
+    def test_non_member_can_request_to_join(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        requester = UserFactory()
+        client = make_authed_client(requester)
+        data = {"equb": reverse("equb-detail", args=[equb.pk])}
+        response = client.post(reverse("equbjoinrequest-list"), data)
+        assert response.status_code == status.HTTP_201_CREATED
+
