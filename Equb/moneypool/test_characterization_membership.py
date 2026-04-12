@@ -138,3 +138,8 @@ class TestEqubInviteRequest:
         assert equb.balance_manager.finished_rounds == 0
         assert equb.balance_manager.start_date is not None
 
+    def test_consensus_required_for_sending_invite_request(self, make_authed_client):
+        #TODO: implement feature
+        pass
+        
+
