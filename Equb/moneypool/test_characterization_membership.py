@@ -153,3 +153,11 @@ class TestEqubJoinRequest:
         response = client.post(reverse("equbjoinrequest-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
 
+    def test_existing_member_cannot_request_to_join(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        client = make_authed_client(equb.creator)
+        data = {"equb": reverse("equb-detail", args=[equb.pk])}
+        response = client.post(reverse("equbjoinrequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
