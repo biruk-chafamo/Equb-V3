@@ -161,3 +161,14 @@ class TestEqubJoinRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
 
+    def test_join_request_receiver_defaults_to_equb_creator(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        requester = UserFactory()
+        client = make_authed_client(requester)
+        data = {"equb": reverse("equb-detail", args=[equb.pk])}
+        response = client.post(reverse("equbjoinrequest-list"), data)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        join_request = EqubJoinRequest.objects.get(pk=response.data["id"])
+        assert join_request.receiver == equb.creator
+
