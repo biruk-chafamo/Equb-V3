@@ -172,3 +172,18 @@ class TestEqubJoinRequest:
         join_request = EqubJoinRequest.objects.get(pk=response.data["id"])
         assert join_request.receiver == equb.creator
 
+    def test_creator_accepting_join_request_adds_member(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        requester = UserFactory()
+        join_request = EqubJoinRequestFactory(
+            equb=equb, sender=requester, receiver=equb.creator
+        )
+        client = make_authed_client(equb.creator)
+        response = client.patch(
+            reverse("equbjoinrequest-detail", args=[join_request.pk]),
+            {"is_accepted": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        equb.refresh_from_db()
+        assert requester in equb.members.all()
+
