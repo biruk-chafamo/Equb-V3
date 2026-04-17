@@ -187,3 +187,20 @@ class TestEqubJoinRequest:
         equb.refresh_from_db()
         assert requester in equb.members.all()
 
+    def test_full_equb_activates_once_max_members_reached(self, make_authed_client):
+        equb = EqubFactory(max_members=2)
+        requester = UserFactory()
+        join_request = EqubJoinRequestFactory(
+            equb=equb, sender=requester, receiver=equb.creator
+        )
+        client = make_authed_client(equb.creator)
+        client.patch(
+            reverse("equbjoinrequest-detail", args=[join_request.pk]),
+            {"is_accepted": True},
+        )
+        equb.refresh_from_db()
+        assert equb.is_active is True
+        assert equb.balance_manager.finished_rounds == 0
+        assert equb.balance_manager.start_date is not None
+
+
