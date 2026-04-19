@@ -204,3 +204,6 @@ class TestEqubJoinRequest:
         assert equb.balance_manager.start_date is not None
 
 
+    def test_consensus_required_for_approving_join_request(self, make_authed_client):
+        #TODO: implement feature
+        pass
