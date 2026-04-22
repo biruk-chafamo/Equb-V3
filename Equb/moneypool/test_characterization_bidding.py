@@ -19,3 +19,10 @@ class TestPlaceBid:
         response = client.post(reverse("bid-list"), data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_bid_of_zero_rejected(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        client = make_authed_client(members[0])
+        data = {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.000"}
+        response = client.post(reverse("bid-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
