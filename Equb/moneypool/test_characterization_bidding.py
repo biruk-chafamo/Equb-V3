@@ -43,3 +43,21 @@ class TestPlaceBid:
         assert HighestBid.objects.get(equb=equb, round=1).bid.amount == Decimal("0.200")
         assert OutBidNotification.objects.filter(equb=equb).count() == 2 * len(members)
 
+    def test_lower_bid_does_not_become_highest(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        client_a = make_authed_client(members[0])
+        client_b = make_authed_client(members[1])
+
+        client_a.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.500"},
+        )
+        response = client_b.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.100"},
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        # highest bid is unchanged, still member[0]'s 0.500
+        assert HighestBid.objects.get(equb=equb, round=1).bid.amount == Decimal("0.500")
+
+
