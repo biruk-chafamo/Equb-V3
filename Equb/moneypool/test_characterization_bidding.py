@@ -61,3 +61,24 @@ class TestPlaceBid:
         assert HighestBid.objects.get(equb=equb, round=1).bid.amount == Decimal("0.500")
 
 
+@pytest.mark.django_db
+class TestWinnerSelection:
+    def test_highest_bidder_wins_round(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        client_a = make_authed_client(members[0])
+        client_b = make_authed_client(members[1])
+
+        client_a.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.100"},
+        )
+        client_b.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.900"},
+        )
+
+        select_winner_task.now(equb.name)
+        equb.refresh_from_db()
+        assert equb.balance_manager.received.all()[0] == members[1]
+        assert equb.is_in_payment_stage is True
+
