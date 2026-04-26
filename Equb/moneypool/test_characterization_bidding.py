@@ -82,3 +82,11 @@ class TestWinnerSelection:
         assert equb.balance_manager.received.all()[0] == members[1]
         assert equb.is_in_payment_stage is True
 
+    def test_no_bid_still_selects_a_winner(self):
+        equb, members = _make_full_equb(max_members=2)
+        select_winner_task.now(equb.name)
+        equb.refresh_from_db()
+        winner = equb.balance_manager.received.all()[0]
+        assert winner in members
+
+
