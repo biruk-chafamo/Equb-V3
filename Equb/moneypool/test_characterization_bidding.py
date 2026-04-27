@@ -90,3 +90,17 @@ class TestWinnerSelection:
         assert winner in members
 
 
+@pytest.mark.django_db
+class TestBidPermissions:
+    def test_member_can_place_bid(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        bidder = members[0]
+        client = make_authed_client(bidder)
+        data = {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.100"}
+        response = client.post(reverse("bid-list"), data)
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert HighestBid.objects.get(equb=equb, round=1).bid.amount == Decimal("0.100")
+        # every member gets an OutBidNotification when a new highest bid lands
+        assert OutBidNotification.objects.filter(equb=equb).count() == len(members)
+
