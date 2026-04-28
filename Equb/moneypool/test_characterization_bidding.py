@@ -104,3 +104,11 @@ class TestBidPermissions:
         # every member gets an OutBidNotification when a new highest bid lands
         assert OutBidNotification.objects.filter(equb=equb).count() == len(members)
 
+    def test_non_member_cannot_bid(self, make_authed_client):
+        equb, _ = _make_full_equb(max_members=2)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        data = {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.100"}
+        response = client.post(reverse("bid-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "user" in response.json()
