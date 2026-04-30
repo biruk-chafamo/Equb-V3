@@ -112,3 +112,13 @@ class TestBidPermissions:
         response = client.post(reverse("bid-list"), data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "user" in response.json()
+    def test_outsider_cannot_list_bids_for_equb_they_are_not_in(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        BidFactory(equb=equb, user=members[0], amount="0.100", round=1)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.get(reverse("bid-list"))
+        assert response.status_code == status.HTTP_200_OK
+        # get_queryset() filters to equbs the user has joined
+        assert response.json() == []
+
