@@ -122,3 +122,10 @@ class TestBidPermissions:
         # get_queryset() filters to equbs the user has joined
         assert response.json() == []
 
+    def test_outsider_cannot_delete_a_bid(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        bid = BidFactory(equb=equb, user=members[0], amount="0.100", round=1)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.delete(reverse("bid-detail", args=[bid.pk]))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
