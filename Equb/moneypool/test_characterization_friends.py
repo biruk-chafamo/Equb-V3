@@ -24,3 +24,13 @@ class TestFriendRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
 
+    def test_duplicate_pending_request_rejected(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        FriendRequestFactory(sender=sender, receiver=receiver)
+        client = make_authed_client(sender)
+        data = {"receiver": reverse("user-detail", args=[receiver.pk])}
+        response = client.post(reverse("friendrequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
