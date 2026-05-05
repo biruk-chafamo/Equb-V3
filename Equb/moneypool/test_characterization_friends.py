@@ -34,3 +34,13 @@ class TestFriendRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
 
+    def test_cannot_request_existing_friend(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        sender.friends.add(receiver)
+        client = make_authed_client(sender)
+        data = {"receiver": reverse("user-detail", args=[receiver.pk])}
+        response = client.post(reverse("friendrequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
