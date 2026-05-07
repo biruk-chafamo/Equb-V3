@@ -57,3 +57,16 @@ class TestFriendRequest:
         assert receiver in sender.friends.all()
         assert sender in receiver.friends.all()
 
+    @pytest.mark.xfail(reason="Rejecting request is not yet implemented")
+    def test_rejecting_a_friend_request(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        friend_request = FriendRequestFactory(sender=sender, receiver=receiver)
+        client = make_authed_client(receiver)
+        response = client.patch(
+            reverse("friendrequest-detail", args=[friend_request.pk]),
+            {"is_rejected": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert receiver not in sender.friends.all()
+
