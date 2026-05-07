@@ -44,3 +44,16 @@ class TestFriendRequest:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "receiver" in response.json()
 
+    def test_accept_makes_users_mutual_friends(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        friend_request = FriendRequestFactory(sender=sender, receiver=receiver)
+        client = make_authed_client(receiver)
+        response = client.patch(
+            reverse("friendrequest-detail", args=[friend_request.pk]),
+            {"is_accepted": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert receiver in sender.friends.all()
+        assert sender in receiver.friends.all()
+
