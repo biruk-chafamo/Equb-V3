@@ -70,3 +70,11 @@ class TestFriendRequest:
         assert response.status_code == status.HTTP_200_OK
         assert receiver not in sender.friends.all()
 
+    def test_received_action_lists_pending_requests(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        FriendRequestFactory(sender=sender, receiver=receiver)
+        client = make_authed_client(receiver)
+        response = client.get(reverse("friendrequest-received"))
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.json()) == 1
