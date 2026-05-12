@@ -71,3 +71,24 @@ class TestPaymentConfirmationLifecycle:
         assert equb.balance_manager.finished_rounds == 2
         assert equb.is_completed is True
 
+    def test_payment_method_must_be_shared(self, make_authed_client):
+        equb, (user0, user1) = _make_full_equb(max_members=2)
+        client0 = make_authed_client(user0)
+        client0.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.900"},
+        )
+        select_winner_task.now(equb.name)
+
+        client1 = make_authed_client(user1)
+        venmo_pm = PaymentMethodFactory(user=user1, service=ServiceChoices.VENMO)
+        data = {
+            "equb": reverse("equb-detail", args=[equb.pk]),
+            "round": 1,
+            "payment_method": reverse("paymentmethod-detail", args=[venmo_pm.pk]),
+        }
+        # user0 (receiver) has no Venmo payment method, only the default Cash one
+        response = client1.post(reverse("paymentconfirmationrequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "payment_method" in response.json()
+
