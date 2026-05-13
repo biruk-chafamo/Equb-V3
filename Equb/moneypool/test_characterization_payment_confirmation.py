@@ -92,3 +92,25 @@ class TestPaymentConfirmationLifecycle:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "payment_method" in response.json()
 
+    def test_duplicate_pending_confirmation_requests_are_rejected(self, make_authed_client):
+        equb, (user0, user1) = _make_full_equb(max_members=2)
+        client0 = make_authed_client(user0)
+        client0.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.900"},
+        )
+        select_winner_task.now(equb.name)
+
+        client1 = make_authed_client(user1)
+        pm = user1.selected_payment_methods.filter(service=ServiceChoices.CASH).first()
+        data = {
+            "equb": reverse("equb-detail", args=[equb.pk]),
+            "round": 1,
+            "payment_method": reverse("paymentmethod-detail", args=[pm.pk]),
+        }
+        first = client1.post(reverse("paymentconfirmationrequest-list"), data)
+        assert first.status_code == status.HTTP_201_CREATED
+
+        second = client1.post(reverse("paymentconfirmationrequest-list"), data)
+        assert second.status_code == status.HTTP_400_BAD_REQUEST
+
