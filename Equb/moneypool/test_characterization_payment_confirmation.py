@@ -114,3 +114,17 @@ class TestPaymentConfirmationLifecycle:
         second = client1.post(reverse("paymentconfirmationrequest-list"), data)
         assert second.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_confirming_before_winner_selected_is_disallowed(self, make_authed_client):
+        equb, (user0, user1) = _make_full_equb(max_members=2)
+        client1 = make_authed_client(user1)
+        pm = user1.selected_payment_methods.filter(service=ServiceChoices.CASH).first()
+        data = {
+            "equb": reverse("equb-detail", args=[equb.pk]),
+            "round": 1,
+            "payment_method": reverse("paymentmethod-detail", args=[pm.pk]),
+        }
+        response = client1.post(reverse("paymentconfirmationrequest-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "round" in response.json()
+
+
