@@ -128,3 +128,14 @@ class TestPaymentConfirmationLifecycle:
         assert "round" in response.json()
 
 
+@pytest.mark.django_db
+class TestPaymentConfirmationRequestPermissions:
+    def test_outsider_cannot_list_others_payment_confirmation_requests(
+        self, make_authed_client
+    ):
+        equb, members = _make_full_equb(max_members=2)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.get(reverse("paymentconfirmationrequest-list"))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
