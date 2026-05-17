@@ -14,3 +14,9 @@ class TestPaymentMethod:
         user = UserFactory(username="new_user")
         assert user.selected_payment_methods.count() == 1
 
+    def test_create_payment_method(self, make_authed_client):
+        client = make_authed_client()
+        data = {"service": ServiceChoices.VENMO, "detail": "@my-venmo"}
+        response = client.post(reverse("paymentmethod-list"), data)
+        assert response.status_code == status.HTTP_201_CREATED
+
