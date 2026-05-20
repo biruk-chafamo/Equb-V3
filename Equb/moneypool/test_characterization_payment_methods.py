@@ -34,3 +34,11 @@ class TestPaymentMethod:
         assert "Venmo" in user_services
         assert "Cash" in user_services
 
+    @pytest.mark.xfail(reason="Deleting payment method is not yet implemented")
+    def test_deleting_own_payment_method_is_allowed(self, make_authed_client):
+        user = UserFactory()
+        pm = PaymentMethodFactory(user=user, service=ServiceChoices.ZELLE)
+        client = make_authed_client(user)
+        response = client.delete(reverse("paymentmethod-detail", args=[pm.pk]))
+        assert response.status_code == status.HTTP_200_OK
+
