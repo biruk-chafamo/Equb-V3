@@ -42,3 +42,11 @@ class TestPaymentMethod:
         response = client.delete(reverse("paymentmethod-detail", args=[pm.pk]))
         assert response.status_code == status.HTTP_200_OK
 
+    def test_duplicate_payment_method_rejected(self, make_authed_client):
+        user = UserFactory()
+        PaymentMethodFactory(user=user, service=ServiceChoices.VENMO, detail="@dup")
+        client = make_authed_client(user)
+        data = {"service": ServiceChoices.VENMO, "detail": "@dup"}
+        response = client.post(reverse("paymentmethod-list"), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
