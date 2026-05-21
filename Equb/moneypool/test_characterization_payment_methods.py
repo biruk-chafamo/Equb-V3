@@ -50,3 +50,8 @@ class TestPaymentMethod:
         response = client.post(reverse("paymentmethod-list"), data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_services_action_lists_all_choices(self, make_authed_client):
+        client = make_authed_client()
+        response = client.get(reverse("paymentmethod-services"))
+        assert response.status_code == status.HTTP_200_OK
+        assert set(response.json()) == {c[0] for c in ServiceChoices.choices}
