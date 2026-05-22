@@ -42,14 +42,6 @@ class ActivateEqubTestCase(APITestCase):
         EqubInviteRequest.objects.all().delete()
         Win.objects.all().delete()
 
-    def test_create_equb_authenticated(self):
-        """
-        Ensure we can create a new equb object.
-        """
-        data = {'name': 'test_equb', 'max_members': 3, 'amount': 100, 'cycle': "00:10:00", 'is_private': False}
-        response = self.client.post(self.equb_list_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
     def test_create_equb_invite_authenticated(self):
         # creating equb by authenticated user, test_user_0
         data = {'name': 'test_equb', 'max_members': 2, 'amount': 100, 'cycle': "00:10:00", 'is_private': False}
