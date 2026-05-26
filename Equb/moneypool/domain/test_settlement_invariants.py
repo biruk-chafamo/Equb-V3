@@ -30,3 +30,7 @@ def _tol(pot):
     return Fraction(pot) * _RELATIVE_TOLERANCE
 
 
+def _close(actual, expected, pot):
+    return abs(Fraction(actual) - Fraction(expected)) <= _tol(pot)
+
+
