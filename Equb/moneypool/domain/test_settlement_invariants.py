@@ -34,3 +34,15 @@ def _close(actual, expected, pot):
     return abs(Fraction(actual) - Fraction(expected)) <= _tol(pot)
 
 
+@st.composite
+def _rounds(draw):
+    pot = draw(_pots)
+    max_members = draw(_max_members)
+    bid = draw(_bids)
+    not_received_count = draw(st.integers(min_value=0, max_value=max_members - 1))
+    return pot, max_members, bid, not_received_count
+
+
+# --- I1: totality ---------------------------------------------------------
+
+
