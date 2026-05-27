@@ -46,3 +46,18 @@ def _rounds(draw):
 # --- I1: totality ---------------------------------------------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_settlement_is_total_over_the_legal_input_box(params):
+    pot, max_members, bid, k = params
+    award = compute_award(pot, max_members, bid, k)
+    waiting = compute_deduction(pot, max_members, bid, in_not_received=True)
+    received = compute_deduction(pot, max_members, bid, in_not_received=False)
+    for value in (award, waiting, received):
+        assert isinstance(value, Decimal)
+        assert value.is_finite()
+
+
+# --- I2: non-negativity ---------------------------------------------------
+
+
