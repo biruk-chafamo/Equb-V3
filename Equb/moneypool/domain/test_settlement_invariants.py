@@ -61,3 +61,15 @@ def test_settlement_is_total_over_the_legal_input_box(params):
 # --- I2: non-negativity ---------------------------------------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_award_and_deductions_are_never_negative(params):
+    pot, max_members, bid, k = params
+    assert compute_award(pot, max_members, bid, k) >= 0
+    assert compute_deduction(pot, max_members, bid, in_not_received=True) >= 0
+    assert compute_deduction(pot, max_members, bid, in_not_received=False) >= 0
+
+
+# --- I4: closed form ------------------------------------------------------
+
+
