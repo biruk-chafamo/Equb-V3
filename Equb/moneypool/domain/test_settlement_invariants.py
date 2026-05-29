@@ -73,3 +73,10 @@ def test_award_and_deductions_are_never_negative(params):
 # --- I4: closed form ------------------------------------------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_award_matches_the_closed_form(params):
+    pot, max_members, bid, k = params
+    assert _close(compute_award(pot, max_members, bid, k), ref.award(pot, max_members, bid, k), pot)
+
+
