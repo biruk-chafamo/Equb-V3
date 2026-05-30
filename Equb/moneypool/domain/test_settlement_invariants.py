@@ -80,3 +80,15 @@ def test_award_matches_the_closed_form(params):
     assert _close(compute_award(pot, max_members, bid, k), ref.award(pot, max_members, bid, k), pot)
 
 
+@pytest.mark.xfail(
+    reason="F4: compute_award divides mid-expression; needs the divide-last form s*(N - b*k)",
+    strict=False,
+)
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_award_matches_the_closed_form_exactly(params):
+    pot, max_members, bid, k = params
+    closed_form = pot * (Decimal(max_members) - Decimal(bid) * Decimal(k)) / Decimal(max_members)
+    assert compute_award(pot, max_members, bid, k) == closed_form
+
+
