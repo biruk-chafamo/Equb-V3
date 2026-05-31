@@ -92,3 +92,16 @@ def test_award_matches_the_closed_form_exactly(params):
     assert compute_award(pot, max_members, bid, k) == closed_form
 
 
+@given(params=_rounds())
+@settings(max_examples=200)
+def test_deductions_match_the_closed_form(params):
+    pot, max_members, bid, k = params
+    waiting = compute_deduction(pot, max_members, bid, in_not_received=True)
+    received = compute_deduction(pot, max_members, bid, in_not_received=False)
+    assert _close(waiting, ref.deduction(pot, max_members, bid, True), pot)
+    assert _close(received, ref.deduction(pot, max_members, bid, False), pot)
+
+
+# --- I5: homogeneity in the pot -------------------------------------------
+
+
