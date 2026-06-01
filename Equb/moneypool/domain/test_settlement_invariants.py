@@ -105,3 +105,20 @@ def test_deductions_match_the_closed_form(params):
 # --- I5: homogeneity in the pot -------------------------------------------
 
 
+@given(params=_rounds(), exponent=st.integers(min_value=-2, max_value=3))
+@settings(max_examples=300)
+def test_settlement_is_homogeneous_in_the_pot(params, exponent):
+    pot, max_members, bid, k = params
+    scale = Decimal(10) ** exponent
+    scaled_pot = pot * scale
+    assume(POT_MIN <= scaled_pot <= POT_MAX)
+
+    assert compute_award(scaled_pot, max_members, bid, k) == scale * compute_award(pot, max_members, bid, k)
+    assert compute_deduction(
+        scaled_pot, max_members, bid, in_not_received=True
+    ) == scale * compute_deduction(pot, max_members, bid, in_not_received=True)
+
+
+# --- I6: round conservation, across the full pot range --------------------
+
+
