@@ -122,3 +122,20 @@ def test_settlement_is_homogeneous_in_the_pot(params, exponent):
 # --- I6: round conservation, across the full pot range --------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=400)
+def test_round_conservation_holds_at_every_pot_magnitude(params):
+    pot, max_members, bid, k = params
+    already_received_count = (max_members - 1) - k
+
+    waiting = compute_deduction(pot, max_members, bid, in_not_received=True)
+    received = compute_deduction(pot, max_members, bid, in_not_received=False)
+    collected = waiting * k + received * already_received_count
+
+    expected = ref.award(pot, max_members, bid, k) - ref.share(pot, max_members)
+    assert _close(collected, expected, pot)
+
+
+# --- I7: discount duality -------------------------------------------------
+
+
