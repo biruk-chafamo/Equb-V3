@@ -139,3 +139,21 @@ def test_round_conservation_holds_at_every_pot_magnitude(params):
 # --- I7: discount duality -------------------------------------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_the_winners_bidding_cost_equals_the_discount_granted(params):
+    pot, max_members, bid, k = params
+    s = ref.share(pot, max_members)
+
+    winners_cost = Fraction(pot) - Fraction(compute_award(pot, max_members, bid, k))
+    per_member_saving = s - Fraction(
+        compute_deduction(pot, max_members, bid, in_not_received=True)
+    )
+
+    assert abs(winners_cost - Fraction(bid) * Fraction(k) * s) <= _tol(pot)
+    assert abs(per_member_saving * Fraction(k) - winners_cost) <= _tol(pot)
+
+
+# --- I8, I9: monotonicity -------------------------------------------------
+
+
