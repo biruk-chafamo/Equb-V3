@@ -157,3 +157,18 @@ def test_the_winners_bidding_cost_equals_the_discount_granted(params):
 # --- I8, I9: monotonicity -------------------------------------------------
 
 
+@given(
+    pot=_pots,
+    max_members=_max_members,
+    bids=st.tuples(_bids, _bids),
+    data=st.data(),
+)
+@settings(max_examples=300)
+def test_award_is_antitone_in_the_bid(pot, max_members, bids, data):
+    k = data.draw(st.integers(min_value=0, max_value=max_members - 1))
+    low, high = sorted(bids)
+    assert compute_award(pot, max_members, low, k) >= compute_award(pot, max_members, high, k)
+    if k > 0 and low < high:
+        assert compute_award(pot, max_members, low, k) > compute_award(pot, max_members, high, k)
+
+
