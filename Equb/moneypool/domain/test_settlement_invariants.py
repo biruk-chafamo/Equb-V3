@@ -172,3 +172,12 @@ def test_award_is_antitone_in_the_bid(pot, max_members, bids, data):
         assert compute_award(pot, max_members, low, k) > compute_award(pot, max_members, high, k)
 
 
+@given(pot=_pots, max_members=_max_members, bids=st.tuples(_bids, _bids))
+@settings(max_examples=200)
+def test_waiting_deduction_is_antitone_in_the_bid(pot, max_members, bids):
+    low, high = sorted(bids)
+    lower_bid_deduction = compute_deduction(pot, max_members, low, in_not_received=True)
+    higher_bid_deduction = compute_deduction(pot, max_members, high, in_not_received=True)
+    assert lower_bid_deduction >= higher_bid_deduction
+
+
