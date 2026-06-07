@@ -181,3 +181,14 @@ def test_waiting_deduction_is_antitone_in_the_bid(pot, max_members, bids):
     assert lower_bid_deduction >= higher_bid_deduction
 
 
+@given(pot=_pots, max_members=_max_members, bid=_bids, data=st.data())
+@settings(max_examples=300)
+def test_award_is_antitone_in_the_waiting_count(pot, max_members, bid, data):
+    fewer = data.draw(st.integers(min_value=0, max_value=max_members - 1))
+    more = data.draw(st.integers(min_value=fewer, max_value=max_members - 1))
+    assert compute_award(pot, max_members, bid, fewer) >= compute_award(pot, max_members, bid, more)
+
+
+# --- I10: flat-payer invariance -------------------------------------------
+
+
