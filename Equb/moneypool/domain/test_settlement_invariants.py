@@ -192,3 +192,13 @@ def test_award_is_antitone_in_the_waiting_count(pot, max_members, bid, data):
 # --- I10: flat-payer invariance -------------------------------------------
 
 
+@given(pot=_pots, max_members=_max_members, bid=_bids, k=st.integers(min_value=0, max_value=19))
+@settings(max_examples=200)
+def test_received_members_deduction_ignores_bid_and_waiting_count(pot, max_members, bid, k):
+    baseline = compute_deduction(pot, max_members, 0, in_not_received=False)
+    assert compute_deduction(pot, max_members, bid, in_not_received=False) == baseline
+
+
+# --- I11, I12: envelope ---------------------------------------------------
+
+
