@@ -202,3 +202,13 @@ def test_received_members_deduction_ignores_bid_and_waiting_count(pot, max_membe
 # --- I11, I12: envelope ---------------------------------------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=400)
+def test_award_stays_inside_its_envelope(params):
+    pot, max_members, bid, k = params
+    award = compute_award(pot, max_members, bid, k)
+    minimum = ref.share(pot, max_members) * Fraction(max_members - k)
+    assert Fraction(award) >= minimum - _tol(pot)
+    assert award <= pot
+
+
