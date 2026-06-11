@@ -212,3 +212,15 @@ def test_award_stays_inside_its_envelope(params):
     assert award <= pot
 
 
+@pytest.mark.xfail(
+    reason="F4: exact at b=1 only once compute_award divides last",
+    strict=False,
+)
+@given(pot=_pots, max_members=_max_members, data=st.data())
+@settings(max_examples=200)
+def test_award_lower_bound_is_exact_at_the_maximum_bid(pot, max_members, data):
+    k = data.draw(st.integers(min_value=0, max_value=max_members - 1))
+    award = compute_award(pot, max_members, Decimal("1.000"), k)
+    assert award == pot * Decimal(max_members - k) / Decimal(max_members)
+
+
