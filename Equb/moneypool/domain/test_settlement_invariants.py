@@ -224,3 +224,11 @@ def test_award_lower_bound_is_exact_at_the_maximum_bid(pot, max_members, data):
     assert award == pot * Decimal(max_members - k) / Decimal(max_members)
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_award_never_falls_below_one_share(params):
+    pot, max_members, bid, k = params
+    award = compute_award(pot, max_members, bid, k)
+    assert Fraction(award) >= ref.share(pot, max_members) - _tol(pot)
+
+
