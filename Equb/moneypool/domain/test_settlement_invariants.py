@@ -232,3 +232,14 @@ def test_award_never_falls_below_one_share(params):
     assert Fraction(award) >= ref.share(pot, max_members) - _tol(pot)
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_waiting_deduction_never_exceeds_a_share(params):
+    pot, max_members, bid, k = params
+    waiting = compute_deduction(pot, max_members, bid, in_not_received=True)
+    assert Fraction(waiting) <= ref.share(pot, max_members) + _tol(pot)
+
+
+# --- I14, I15: the two bid extremes ---------------------------------------
+
+
