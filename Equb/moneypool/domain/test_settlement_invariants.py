@@ -243,3 +243,13 @@ def test_waiting_deduction_never_exceeds_a_share(params):
 # --- I14, I15: the two bid extremes ---------------------------------------
 
 
+@given(pot=_pots, max_members=_max_members, data=st.data())
+@settings(max_examples=300)
+def test_zero_bid_is_exactly_plain_rotating_savings(pot, max_members, data):
+    k = data.draw(st.integers(min_value=0, max_value=max_members - 1))
+    assert compute_award(pot, max_members, 0, k) == pot
+    flat = pot / Decimal(max_members)
+    assert compute_deduction(pot, max_members, 0, in_not_received=True) == flat
+    assert compute_deduction(pot, max_members, 0, in_not_received=False) == flat
+
+
