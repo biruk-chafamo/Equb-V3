@@ -253,3 +253,12 @@ def test_zero_bid_is_exactly_plain_rotating_savings(pot, max_members, data):
     assert compute_deduction(pot, max_members, 0, in_not_received=False) == flat
 
 
+@given(pot=_pots, max_members=_max_members, data=st.data())
+@settings(max_examples=300)
+def test_maximum_bid_zeroes_the_waiting_deduction(pot, max_members, data):
+    k = data.draw(st.integers(min_value=0, max_value=max_members - 1))
+    assert compute_deduction(pot, max_members, Decimal("1.000"), in_not_received=True) == 0
+    award = compute_award(pot, max_members, Decimal("1.000"), k)
+    assert _close(award, ref.share(pot, max_members) * Fraction(max_members - k), pot)
+
+
