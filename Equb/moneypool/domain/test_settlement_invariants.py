@@ -262,3 +262,12 @@ def test_maximum_bid_zeroes_the_waiting_deduction(pot, max_members, data):
     assert _close(award, ref.share(pot, max_members) * Fraction(max_members - k), pot)
 
 
+@given(pot=_pots, max_members=_max_members)
+@settings(max_examples=200)
+def test_maximum_bid_in_the_first_round_moves_no_money(pot, max_members):
+    """F6: k = N-1 and b = 1 makes the round a no-op that still consumes the turn."""
+    k = max_members - 1
+    award = compute_award(pot, max_members, Decimal("1.000"), k)
+    share = compute_deduction(pot, max_members, 0, in_not_received=False)
+    assert compute_deduction(pot, max_members, Decimal("1.000"), in_not_received=True) == 0
+    assert _close(award - share, Fraction(0), pot)
