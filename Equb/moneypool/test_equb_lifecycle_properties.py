@@ -70,3 +70,21 @@ def _run_equb(max_members, amount, bid_plan):
     return list(equb.members.all()), winners, bids, waiting_counts, awards, deductions
 
 
+def _nets(members, winners, awards, deductions, amount, max_members):
+    share = compute_deduction(amount, max_members, 0, in_not_received=False)
+    win_round = {winner.pk: index + 1 for index, winner in enumerate(winners)}
+    nets = {}
+    for member in members:
+        round_number = win_round[member.pk]
+        cash_in = Fraction(awards[round_number - 1]) - Fraction(share)
+        cash_out = sum(
+            (Fraction(charges[member.pk]) for charges in deductions if member.pk in charges),
+            Fraction(0),
+        )
+        nets[member.pk] = cash_in - cash_out
+    return nets, win_round
+
+
+# --- I16, I17, I18, I19, I20, I21 -----------------------------------------
+
+
