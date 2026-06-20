@@ -88,3 +88,43 @@ def _nets(members, winners, awards, deductions, amount, max_members):
 # --- I16, I17, I18, I19, I20, I21 -----------------------------------------
 
 
+@pytest.mark.django_db
+@given(max_members=_sizes, data=st.data())
+@settings(max_examples=12, deadline=None, suppress_health_check=[HealthCheck.function_scoped_fixture])
+def test_the_ledger_of_a_whole_equb_matches_the_closed_form(max_members, data):
+    amount = data.draw(_amounts)
+    bid_plan = data.draw(st.lists(_bids, min_size=max_members, max_size=max_members))
+
+    members, winners, bids, waiting_counts, awards, deductions = _run_equb(
+        max_members, amount, bid_plan
+    )
+    tolerance = Fraction(amount) * _RELATIVE_TOLERANCE * max_members
+    nets, win_round = _nets(members, winners, awards, deductions, amount, max_members)
+    share = ref.share(amount, max_members)
+
+    # I16: the winner of round r leaves exactly N - r members still waiting
+    assert waiting_counts == [max_members - r for r in range(1, max_members + 1)]
+
+    # I17: the win schedule is a permutation of the membership
+    assert len(winners) == max_members
+    assert {winner.pk for winner in winners} == {member.pk for member in members}
+
+    for member in members:
+        round_number = win_round[member.pk]
+        # I18
+        expected = ref.member_net(amount, max_members, bids, round_number)
+        assert abs(nets[member.pk] - expected) <= tolerance
+        # I20
+        if bids[round_number - 1] == 0:
+            assert nets[member.pk] >= -tolerance
+        # I21
+        worst_case = -share * Fraction(bids[round_number - 1]) * Fraction(max_members - round_number)
+        assert nets[member.pk] >= worst_case - tolerance
+
+    # I19
+    assert abs(sum(nets.values(), Fraction(0))) <= tolerance
+
+
+# --- I22: patience never hurts a non-bidder -------------------------------
+
+
