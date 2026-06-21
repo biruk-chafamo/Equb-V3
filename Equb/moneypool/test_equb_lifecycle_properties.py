@@ -128,3 +128,25 @@ def test_the_ledger_of_a_whole_equb_matches_the_closed_form(max_members, data):
 # --- I22: patience never hurts a non-bidder -------------------------------
 
 
+@given(
+    amount=_amounts,
+    max_members=st.integers(min_value=2, max_value=20),
+    data=st.data(),
+)
+@settings(max_examples=200)
+def test_winning_later_never_hurts_a_member_who_does_not_bid(amount, max_members, data):
+    bids = data.draw(st.lists(_bids, min_size=max_members, max_size=max_members))
+    earlier = data.draw(st.integers(min_value=1, max_value=max_members))
+    later = data.draw(st.integers(min_value=earlier, max_value=max_members))
+    quiet = list(bids)
+    quiet[earlier - 1] = 0
+    quiet[later - 1] = 0
+
+    assert ref.member_net(amount, max_members, quiet, later) >= ref.member_net(
+        amount, max_members, quiet, earlier
+    )
+
+
+# --- I27: the round's winner is never charged -----------------------------
+
+
