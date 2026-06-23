@@ -150,3 +150,32 @@ def test_winning_later_never_hurts_a_member_who_does_not_bid(amount, max_members
 # --- I27: the round's winner is never charged -----------------------------
 
 
+@pytest.mark.django_db
+class TestWinnerIsNeverCharged:
+    def test_winner_cannot_send_a_payment_request_for_their_own_round(self, make_authed_client):
+        equb, (user0, user1) = _make_full_equb(max_members=2)
+        client0 = make_authed_client(user0)
+        client0.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.900"},
+        )
+        select_winner_task.now(equb.name)
+        equb.refresh_from_db()
+        assert equb.balance_manager.latest_winner() == user0
+
+        payment_method = user0.selected_payment_methods.filter(service=ServiceChoices.CASH).first()
+        response = client0.post(
+            reverse("paymentconfirmationrequest-list"),
+            {
+                "equb": reverse("equb-detail", args=[equb.pk]),
+                "round": 1,
+                "payment_method": reverse("paymentmethod-detail", args=[payment_method.pk]),
+            },
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
+
+
+# --- F1: the displayed award is not the cash the winner receives ----------
+
+
