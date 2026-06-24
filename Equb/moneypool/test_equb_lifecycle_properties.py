@@ -179,3 +179,26 @@ class TestWinnerIsNeverCharged:
 # --- F1: the displayed award is not the cash the winner receives ----------
 
 
+@pytest.mark.django_db
+@pytest.mark.xfail(
+    reason="F1: get_current_award reports the gross award; the winner receives one share less",
+    strict=False,
+)
+def test_displayed_award_equals_the_cash_the_winner_receives(make_authed_client):
+    equb, (user0, user1) = _make_full_equb(max_members=2, amount=Decimal("100.00"))
+    client0 = make_authed_client(user0)
+    client0.post(
+        reverse("bid-list"),
+        {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.900"},
+    )
+    select_winner_task.now(equb.name)
+    equb.refresh_from_db()
+    manager = BalanceManager.objects.get(equb=equb)
+
+    displayed = manager.calculate_winners_award(1)
+    collected = sum(
+        manager.calculate_losers_deductions(member, 1)
+        for member in equb.members.all()
+        if member != manager.latest_winner()
+    )
+    assert displayed == collected
