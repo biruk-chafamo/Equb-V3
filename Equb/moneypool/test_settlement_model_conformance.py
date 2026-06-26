@@ -29,3 +29,12 @@ def _limits(field, validator_class):
 # --- I24: generators match the bounds the system enforces -----------------
 
 
+def test_pot_strategy_matches_the_amount_field():
+    field = Equb._meta.get_field("amount")
+    assert POT_PLACES == field.decimal_places
+    assert POT_MAX == Decimal(10) ** (field.max_digits - field.decimal_places) - Decimal(
+        1
+    ).scaleb(-field.decimal_places)
+    assert Decimal(str(_limits(field, MinValueValidator)[0])) == POT_MIN
+
+
