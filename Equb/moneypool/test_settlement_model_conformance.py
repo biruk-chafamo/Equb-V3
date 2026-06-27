@@ -38,3 +38,13 @@ def test_pot_strategy_matches_the_amount_field():
     assert Decimal(str(_limits(field, MinValueValidator)[0])) == POT_MIN
 
 
+def test_max_members_strategy_matches_the_enforced_range():
+    field = Equb._meta.get_field("max_members")
+    assert _limits(field, MinValueValidator)[0] == MAX_MEMBERS_MIN
+
+    assert validation.is_max_members_too_low(MAX_MEMBERS_MIN) is False
+    assert validation.is_max_members_too_low(MAX_MEMBERS_MIN - 1) is True
+    assert validation.is_max_members_too_high(MAX_MEMBERS_MAX) is False
+    assert validation.is_max_members_too_high(MAX_MEMBERS_MAX + 1) is True
+
+
