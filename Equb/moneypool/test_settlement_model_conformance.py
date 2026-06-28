@@ -48,3 +48,13 @@ def test_max_members_strategy_matches_the_enforced_range():
     assert validation.is_max_members_too_high(MAX_MEMBERS_MAX + 1) is True
 
 
+def test_bid_strategy_matches_the_bid_field():
+    field = Bid._meta.get_field("amount")
+    assert BID_PLACES == field.decimal_places
+    assert Decimal(str(_limits(field, MinValueValidator)[0])) == BID_MIN
+    assert Decimal(str(_limits(field, MaxValueValidator)[0])) == BID_MAX
+
+
+# --- I25: results fit the field they are written back to ------------------
+
+
