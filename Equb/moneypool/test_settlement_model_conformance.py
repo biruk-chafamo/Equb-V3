@@ -58,3 +58,23 @@ def test_bid_strategy_matches_the_bid_field():
 # --- I25: results fit the field they are written back to ------------------
 
 
+@given(params=_rounds())
+@settings(max_examples=300)
+def test_settlement_results_fit_the_amount_field(params):
+    pot, max_members, bid, k = params
+    field = Equb._meta.get_field("amount")
+    limit = Decimal(10) ** (field.max_digits - field.decimal_places)
+    cent = Decimal(1).scaleb(-field.decimal_places)
+
+    for value in (
+        compute_award(pot, max_members, bid, k),
+        compute_deduction(pot, max_members, bid, in_not_received=True),
+        compute_deduction(pot, max_members, bid, in_not_received=False),
+    ):
+        assert abs(value) < limit
+        assert abs(value.quantize(cent)) < limit
+
+
+# --- I26: the bid gate fires exactly when bidding stops mattering ---------
+
+
