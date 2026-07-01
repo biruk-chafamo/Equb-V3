@@ -78,3 +78,13 @@ def test_settlement_results_fit_the_amount_field(params):
 # --- I26: the bid gate fires exactly when bidding stops mattering ---------
 
 
+@given(pot=_pots, max_members=_max_members, bid=_bids)
+@settings(max_examples=200)
+def test_final_round_gate_fires_exactly_when_no_members_are_waiting(pot, max_members, bid):
+    for current_round in range(1, max_members + 1):
+        waiting_after_selection = max_members - current_round
+        assert validation.is_final_round(current_round, max_members) == (
+            waiting_after_selection == 0
+        )
+
+    assert compute_award(pot, max_members, bid, 0) == compute_award(pot, max_members, 0, 0)
