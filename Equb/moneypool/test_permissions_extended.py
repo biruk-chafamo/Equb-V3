@@ -21,3 +21,15 @@ class TestEqubJoinRequestPermissions:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_outsider_cannot_patch_someone_elses_join_request(self, make_authed_client):
+        equb = EqubFactory(max_members=3)
+        requester = UserFactory()
+        join_request = EqubJoinRequestFactory(equb=equb, sender=requester, receiver=equb.creator)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.patch(
+            reverse("equbjoinrequest-detail", args=[join_request.pk]), {"is_accepted": True}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
