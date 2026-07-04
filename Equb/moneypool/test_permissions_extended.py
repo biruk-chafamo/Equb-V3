@@ -33,3 +33,15 @@ class TestEqubJoinRequestPermissions:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest.mark.django_db
+class TestFriendRequestPermissions:
+    def test_sender_cannot_patch_their_own_friend_request(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        friend_request = FriendRequestFactory(sender=sender, receiver=receiver)
+        client = make_authed_client(sender)
+        response = client.patch(
+            reverse("friendrequest-detail", args=[friend_request.pk]), {"is_accepted": True}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
