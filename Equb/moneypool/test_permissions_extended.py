@@ -45,3 +45,15 @@ class TestFriendRequestPermissions:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_outsider_cannot_patch_someone_elses_friend_request(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        friend_request = FriendRequestFactory(sender=sender, receiver=receiver)
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.patch(
+            reverse("friendrequest-detail", args=[friend_request.pk]), {"is_accepted": True}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
