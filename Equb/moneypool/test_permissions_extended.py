@@ -91,3 +91,14 @@ class TestPaymentConfirmationRequestPermissions:
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
+@pytest.mark.django_db
+class TestUserProfilePermissions:
+    def test_cannot_edit_another_users_profile(self, make_authed_client):
+        target = UserFactory()
+        other = UserFactory()
+        client = make_authed_client(other)
+        response = client.patch(
+            reverse("user-detail", args=[target.pk]), {"first_name": "Hijacked"}
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
