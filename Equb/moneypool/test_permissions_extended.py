@@ -102,3 +102,8 @@ class TestUserProfilePermissions:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+    def test_can_edit_own_profile(self, make_authed_client):
+        user = UserFactory()
+        client = make_authed_client(user)
+        response = client.patch(reverse("user-detail", args=[user.pk]), {"first_name": "NewName"})
+        assert response.status_code == status.HTTP_200_OK
