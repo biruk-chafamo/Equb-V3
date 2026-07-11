@@ -26,3 +26,21 @@ class TestRegisterUserBlankEmail:
         assert "email" in response.json()
 
 
+@pytest.mark.django_db
+class TestBidValidationRemainingBranches:
+    def test_cannot_bid_again_after_already_winning(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        winner = members[0]
+        place_bid(winner, equb, Decimal("0.900"))
+        select_winner_task.now(equb.name)
+        equb.refresh_from_db()
+        assert equb.balance_manager.latest_winner() == winner
+
+        client = make_authed_client(winner)
+        response = client.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.500"},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "user" in response.json()
+
