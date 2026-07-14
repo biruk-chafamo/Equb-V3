@@ -44,3 +44,15 @@ class TestBidValidationRemainingBranches:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "user" in response.json()
 
+    def test_cannot_bid_before_equb_is_active(self, make_authed_client):
+        # max_members=3, only the creator has joined, equb isn't full/active yet
+        equb = EqubFactory(max_members=3)
+        assert equb.is_active is False
+        client = make_authed_client(equb.creator)
+        response = client.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.500"},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "equb" in response.json()
+
