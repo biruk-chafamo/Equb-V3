@@ -56,3 +56,20 @@ class TestBidValidationRemainingBranches:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "equb" in response.json()
 
+    def test_cannot_bid_during_payment_stage(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=3)
+        place_bid(members[0], equb, Decimal("0.900"))
+        select_winner_task.now(equb.name)  # members[0] wins, equb enters payment stage
+        equb.refresh_from_db()
+        assert equb.is_in_payment_stage is True
+
+        # members[1] hasn't won, would otherwise be a valid bidder, except
+        # the equb is now in the payment stage for the round already decided
+        client = make_authed_client(members[1])
+        response = client.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.500"},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "equb" in response.json()
+
