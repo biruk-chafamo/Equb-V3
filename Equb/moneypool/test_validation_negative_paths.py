@@ -73,3 +73,21 @@ class TestBidValidationRemainingBranches:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "equb" in response.json()
 
+    def test_cannot_bid_in_the_final_round(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        place_bid(members[0], equb, Decimal("0.900"))
+        select_winner_task.now(equb.name)
+        equb.refresh_from_db()
+        equb.balance_manager.setup_next_round()
+        equb.refresh_from_db()
+        assert equb.balance_manager.current_round() == equb.max_members  # final round
+
+        client = make_authed_client(members[1])
+        response = client.post(
+            reverse("bid-list"),
+            {"equb": reverse("equb-detail", args=[equb.pk]), "amount": "0.500"},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "equb" in response.json()
+
+
