@@ -91,3 +91,17 @@ class TestBidValidationRemainingBranches:
         assert "equb" in response.json()
 
 
+@pytest.mark.django_db
+class TestEqubJoinRequestCannotJoinActiveEqub:
+    def test_cannot_request_to_join_an_already_active_equb(self, make_authed_client):
+        equb, _ = _make_full_equb(max_members=2)
+        assert equb.is_active is True
+        outsider = UserFactory()
+        client = make_authed_client(outsider)
+        response = client.post(
+            reverse("equbjoinrequest-list"), {"equb": reverse("equb-detail", args=[equb.pk])}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "equb" in response.json()
+
+
