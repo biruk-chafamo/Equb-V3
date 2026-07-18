@@ -105,3 +105,21 @@ class TestEqubJoinRequestCannotJoinActiveEqub:
         assert "equb" in response.json()
 
 
+@pytest.mark.django_db
+class TestEqubInviteRequestCannotInviteToActiveEqub:
+    def test_cannot_invite_to_an_already_active_equb(self, make_authed_client):
+        equb, members = _make_full_equb(max_members=2)
+        assert equb.is_active is True
+        new_user = UserFactory()
+        client = make_authed_client(members[0])
+        response = client.post(
+            reverse("equbinviterequest-list"),
+            {
+                "equb": reverse("equb-detail", args=[equb.pk]),
+                "receiver": reverse("user-detail", args=[new_user.pk]),
+            },
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "equb" in response.json()
+
+
