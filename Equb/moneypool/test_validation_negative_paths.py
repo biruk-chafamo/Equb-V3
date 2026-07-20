@@ -123,3 +123,15 @@ class TestEqubInviteRequestCannotInviteToActiveEqub:
         assert "equb" in response.json()
 
 
+@pytest.mark.django_db
+class TestFriendRequestAlreadyFriend:
+    def test_cannot_send_friend_request_to_existing_friend(self, make_authed_client):
+        sender = UserFactory()
+        receiver = UserFactory()
+        sender.friends.add(receiver)
+        client = make_authed_client(sender)
+        response = client.post(
+            reverse("friendrequest-list"), {"receiver": reverse("user-detail", args=[receiver.pk])}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "receiver" in response.json()
