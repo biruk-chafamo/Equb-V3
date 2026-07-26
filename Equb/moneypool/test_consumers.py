@@ -18,3 +18,16 @@ def _ws_url(token=None):
     return f"/ws/moneypool/?token={token}" if token else "/ws/moneypool/"
 
 
+@pytest.mark.django_db(transaction=True)
+class TestConnectAuth:
+    def test_valid_token_connects(self):
+        async def body():
+            user = await _acreate_user()
+            token = str(RefreshToken.for_user(user).access_token)
+            communicator = WebsocketCommunicator(application, _ws_url(token))
+            connected, _ = await communicator.connect()
+            assert connected is True
+            await communicator.disconnect()
+
+        async_to_sync(body)()
+
