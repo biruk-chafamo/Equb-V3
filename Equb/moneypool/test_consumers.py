@@ -31,3 +31,11 @@ class TestConnectAuth:
 
         async_to_sync(body)()
 
+    def test_missing_token_rejected(self):
+        async def body():
+            communicator = WebsocketCommunicator(application, _ws_url())
+            connected, _ = await communicator.connect()
+            assert connected is False
+
+        async_to_sync(body)()
+
