@@ -47,3 +47,15 @@ class TestConnectAuth:
 
         async_to_sync(body)()
 
+    def test_expired_or_invalid_signature_token_rejected(self):
+        async def body():
+            import jwt as pyjwt
+
+            bogus_token = pyjwt.encode({"user_id": 1}, "wrong-secret-key", algorithm="HS256")
+            communicator = WebsocketCommunicator(application, _ws_url(bogus_token))
+            connected, _ = await communicator.connect()
+            assert connected is False
+
+        async_to_sync(body)()
+
+
