@@ -59,3 +59,24 @@ class TestConnectAuth:
         async_to_sync(body)()
 
 
+@pytest.mark.django_db(transaction=True)
+class TestSubscriptionAndLiveUpdates:
+    def test_member_receives_live_update_for_their_equb(self):
+        async def body():
+            user, equb = await _acreate_user_with_equb()
+            token = str(RefreshToken.for_user(user).access_token)
+            communicator = WebsocketCommunicator(application, _ws_url(token))
+            connected, _ = await communicator.connect()
+            assert connected is True
+
+            channel_layer = get_channel_layer()
+            await channel_layer.group_send(
+                f"equb_{equb.id}", {"type": "send_equb_update", "equb_id": equb.id}
+            )
+
+            response = await communicator.receive_from()
+            assert json.loads(response) == {"equb_id": equb.id}
+            await communicator.disconnect()
+
+        async_to_sync(body)()
+
