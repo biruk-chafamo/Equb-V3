@@ -80,3 +80,28 @@ class TestSubscriptionAndLiveUpdates:
 
         async_to_sync(body)()
 
+    def test_receive_message_subscribes_to_a_newly_joined_equb(self):
+        async def body():
+            user = await _acreate_user()
+
+            # equb the user is a member of, but created after connect,
+            # simulating a user joinining after the socket opened
+            equb = await _acreate_equb_with_member(user)
+
+            token = str(RefreshToken.for_user(user).access_token)
+            communicator = WebsocketCommunicator(application, _ws_url(token))
+            connected, _ = await communicator.connect()
+            assert connected is True
+
+            await communicator.send_to(text_data=json.dumps({"equb_id": equb.id}))
+
+            channel_layer = get_channel_layer()
+            await channel_layer.group_send(
+                f"equb_{equb.id}", {"type": "send_equb_update", "equb_id": equb.id}
+            )
+            response = await communicator.receive_from()
+            assert json.loads(response) == {"equb_id": equb.id}
+            await communicator.disconnect()
+
+        async_to_sync(body)()
+
