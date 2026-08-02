@@ -105,3 +105,25 @@ class TestSubscriptionAndLiveUpdates:
 
         async_to_sync(body)()
 
+    def test_receive_message_does_not_subscribe_to_an_equb_user_is_not_a_member_of(self):
+        async def body():
+            user = await _acreate_user()
+            other_equb = await _acreate_equb_with_member(await _acreate_user())
+
+            token = str(RefreshToken.for_user(user).access_token)
+            communicator = WebsocketCommunicator(application, _ws_url(token))
+            connected, _ = await communicator.connect()
+            assert connected is True
+
+            await communicator.send_to(text_data=json.dumps({"equb_id": other_equb.id}))
+
+            channel_layer = get_channel_layer()
+            await channel_layer.group_send(
+                f"equb_{other_equb.id}", {"type": "send_equb_update", "equb_id": other_equb.id}
+            )
+            assert await communicator.receive_nothing(timeout=0.5) is True
+            await communicator.disconnect()
+
+        async_to_sync(body)()
+
+
