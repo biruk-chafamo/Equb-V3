@@ -127,3 +127,9 @@ class TestSubscriptionAndLiveUpdates:
         async_to_sync(body)()
 
 
+async def _acreate_user():
+    from channels.db import database_sync_to_async
+
+    return await database_sync_to_async(UserFactory)()
+
+
