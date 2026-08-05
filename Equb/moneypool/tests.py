@@ -1,6 +1,7 @@
 import json
 
 from django.urls import reverse
+from django.test import override_settings
 from django.test.client import RequestFactory
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -153,6 +154,24 @@ class ActivateEqubTestCase(APITestCase):
         equb = Equb.objects.get(name='test_equb')
         self.assertEqual(equb.balance_manager.finished_rounds, 2)
         self.assertEqual(equb.is_completed, True)
+
+
+class SmartPasswordResetTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='reset_user', email='reset_user@example.com',
+            first_name='Reset', last_name='User', password='test_password'
+        )
+
+    @override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+    def test_password_reset_for_user_with_password_succeeds(self):
+        """
+        Regression test: smart_password_reset used to call reset_password_token_created.send(
+        sender=self.__class__, instance=self, ...) inside a plain function view with no `self`,
+        which always raised NameError and turned this into a 500.
+        """
+        response = self.client.post(reverse('smart_password_reset'), {'email': self.user.email})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 class Util:

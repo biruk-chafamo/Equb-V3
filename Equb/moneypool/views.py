@@ -455,74 +455,44 @@ def google_auth(request):
     Authenticate user with Google ID token and return JWT tokens.
     Handles email conflicts with existing password-based accounts.
     """
-    print(f"DEBUG: Google auth endpoint hit! Request data: {request.data}")
-    print(f"DEBUG: Request headers: {request.headers}")
-    
     # Validate request data using serializer
     from .serializers import GoogleAuthSerializer
     serializer = GoogleAuthSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     try:
-        # Handle both ID token and Access token
-        id_token_str = serializer.validated_data.get('id_token')
-        access_token_str = serializer.validated_data.get('access_token')
-        
-        if id_token_str:
-            print("DEBUG: Using ID token for verification")
-            
-            # Choose the correct client ID based on platform using enum
-            platform = serializer.validated_data.get('platform', AuthPlatform.WEB.value)
-            client_id = AuthPlatform.get_client_id(platform)
-            print(f"DEBUG: Using {platform} client ID: {client_id[:20]}...")
-            
-            # Verify the Google ID token
-            idinfo = id_token.verify_oauth2_token(
-                id_token_str, 
-                requests.Request(), 
-                client_id
-            )
-            # Extract user information from the verified token
-            google_id = idinfo['sub']
-            email = idinfo['email']
-            first_name = idinfo.get('given_name', '')
-            last_name = idinfo.get('family_name', '')
-            
-        elif access_token_str:
-            print("DEBUG: Using Access token for verification")
-            # For access token, make a request to Google's userinfo endpoint
-            import urllib.request
-            import json
-            
-            try:
-                userinfo_url = f"https://www.googleapis.com/oauth2/v1/userinfo?access_token={access_token_str}"
-                print(f"DEBUG: Making request to: {userinfo_url}")
-                with urllib.request.urlopen(userinfo_url) as response:
-                    userinfo = json.loads(response.read().decode())
-                
-                print(f"DEBUG: Userinfo response: {userinfo}")
-                
-                # Extract user information from userinfo response
-                google_id = userinfo['id']
-                email = userinfo['email']
-                first_name = userinfo.get('given_name', '')
-                last_name = userinfo.get('family_name', '')
-            except Exception as e:
-                print(f"DEBUG: Error fetching userinfo: {e}")
-                raise
-        else:
-            return Response(
-                {'message': 'No valid token provided'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+        id_token_str = serializer.validated_data['id_token']
+
+        # Choose the correct client ID based on platform using enum
+        platform = serializer.validated_data.get('platform', AuthPlatform.WEB.value)
+        client_id = AuthPlatform.get_client_id(platform)
+
+        # Verify the Google ID token
+        idinfo = id_token.verify_oauth2_token(
+            id_token_str,
+            requests.Request(),
+            client_id
+        )
+
+        if not idinfo.get('email_verified'):
+            return Response({
+                'error': 'email_not_verified',
+                'message': 'Your Google email address is not verified.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Extract user information from the verified token
+        google_id = idinfo['sub']
+        email = idinfo['email']
+        first_name = idinfo.get('given_name', '')
+        last_name = idinfo.get('family_name', '')
+
         # Check if user exists with this Google ID
         try:
             user = User.objects.get(google_id=google_id)
         except User.DoesNotExist:
             # Check if user exists with this email but no Google ID (password account)
-            existing_user = User.objects.filter(email=email, google_id__isnull=True).first()
+            existing_user = User.objects.filter(email__iexact=email, google_id__isnull=True).first()
             if existing_user:
                 return Response({
                     'error': 'account_exists_with_password',
@@ -566,10 +536,6 @@ def google_auth(request):
     
     except Exception as e:
         # Other errors
-        print(f"DEBUG: General exception in google_auth: {e}")
-        print(f"DEBUG: Exception type: {type(e)}")
-        import traceback
-        print(f"DEBUG: Traceback: {traceback.format_exc()}")
         return Response({
             'error': 'authentication_failed',
             'message': 'Google authentication failed'
@@ -675,8 +641,8 @@ def smart_password_reset(request):
             
             # Send the signal to trigger email (our existing signal handler will send the email)
             reset_password_token_created.send(
-                sender=self.__class__,
-                instance=self,
+                sender=smart_password_reset,
+                instance=None,
                 reset_password_token=token
             )
             
@@ -698,9 +664,8 @@ def smart_password_reset(request):
         })
         
     except Exception as e:
-        print(f"Error in smart_password_reset: {e}")
         return Response({
-            'error': 'reset_failed', 
+            'error': 'reset_failed',
             'message': 'Password reset request failed. Please try again.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
