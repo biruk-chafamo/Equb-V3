@@ -133,3 +133,14 @@ async def _acreate_user():
     return await database_sync_to_async(UserFactory)()
 
 
+async def _acreate_user_with_equb():
+    from channels.db import database_sync_to_async
+
+    def _make():
+        user = UserFactory()
+        equb = EqubFactory(creator=user, max_members=3)
+        return user, equb
+
+    return await database_sync_to_async(_make)()
+
+
