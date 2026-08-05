@@ -30,7 +30,9 @@ services:
       - .:/usr/src/app/
     depends_on:
       - pgdb
-    
+    env_file:
+      - .env
+
 
   pgdb:
     image: postgres
