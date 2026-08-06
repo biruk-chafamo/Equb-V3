@@ -12,10 +12,11 @@ class EqubConsumer(WebsocketConsumer):
 
     def connect(self):
         logger.info("WebSocket connection attempt started")
-        
+        self.equbs = Equb.objects.none()
+
         try:
             user = self.scope.get('user')
-            
+
             if user.is_anonymous:
                 logger.warning("Anonymous user attempted to connect - rejecting")
                 self.close()
