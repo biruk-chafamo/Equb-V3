@@ -144,3 +144,7 @@ async def _acreate_user_with_equb():
     return await database_sync_to_async(_make)()
 
 
+async def _acreate_equb_with_member(user):
+    from channels.db import database_sync_to_async
+
+    return await database_sync_to_async(lambda: EqubFactory(creator=user, max_members=3))()
