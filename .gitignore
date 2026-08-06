@@ -10,3 +10,4 @@ newvenv/
 equb_venv/
 credentials/
 
+.DS_Store
