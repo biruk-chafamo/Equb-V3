@@ -20,6 +20,7 @@ services:
     depends_on:
       - pgdb
       - background_tasks
+      - redis
     env_file:
       - .env
 
@@ -51,6 +52,12 @@ services:
       - pgdata:/var/lib/postgresql/data
     env_file:
       - .env
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379"
 
 volumes:
   pgdata:
