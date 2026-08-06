@@ -3,17 +3,22 @@ from django.dispatch import receiver, Signal
 from django.conf import settings
 from django.utils import timezone
 import datetime
+import logging
+from asgiref.sync import async_to_sync
 
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.urls import reverse
 
 from django_rest_passwordreset.signals import reset_password_token_created
+from channels.layers import get_channel_layer
 
 from guardian.shortcuts import assign_perm
 
 from .models import *
 from .tasks import select_winner_task
+
+logger = logging.getLogger(__name__)
 
 @receiver(signal=post_save, sender=User)
 def new_user(sender, instance, created, **kwargs):
@@ -77,6 +82,20 @@ def new_bid_action(sender, instance, created, **kwargs):
         OutBidNotification.notify(equb=bid.equb, previous_highest_bid=previous_highest_bid, new_highest_bid=bid)
         bid.make_highest_bid()
 
+        # push live update to other equb subscribers
+        equb_id = bid.equb.id
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"equb_{equb_id}",
+                    {
+                        'type': 'send_equb_update',
+                        'equb_id': equb_id,
+                    }
+                )
+            logger.info(f"sent live update for equb {equb_id}")
+        else:
+            logger.warning('channel layer not configured, skipping live update')
 
 @receiver(signal=new_round_signal, sender=BalanceManager)
 def new_round_action(sender, instance, equb, **kwargs):
