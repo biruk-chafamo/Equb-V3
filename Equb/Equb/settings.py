@@ -44,6 +44,7 @@ CORS_ALLOWED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     'moneypool.apps.MoneypoolConfig',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -101,6 +102,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Equb.wsgi.application'
+ASGI_APPLICATION = "Equb.asgi.application"
 
 
 # Database
@@ -114,6 +116,21 @@ DATABASES = {
         'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
         'HOST': os.getenv('POSTGRES_HOST'),
         'PORT': '5432',
+    }
+}
+
+_redis_url = os.getenv('REDIS_URL', 'redis://redis:6379')
+_redis_host = {'address': _redis_url}
+if _redis_url.startswith('rediss://'):
+    # Heroku Redis' TLS cert chain isn't verifiable by default clients.
+    _redis_host['ssl_cert_reqs'] = None
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [_redis_host],
+        },
     }
 }
 
@@ -216,3 +233,29 @@ if USE_S3:
 
 STRIPE_SECRET_KEY=os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY=os.getenv('STRIPE_PUBLISHABLE_KEY')
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+    },
+    'loggers': {
+        'moneypool.consumers': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'moneypool.signals': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
