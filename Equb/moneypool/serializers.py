@@ -425,3 +425,28 @@ class PaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerialize
         model = PaymentConfirmationRequest
         fields = ['id', 'url', 'sender', 'receiver', 'equb', 'round', 'payment_method', 'message', 'is_accepted', 'is_rejected', 'creation_date']
         read_only_fields = ['id', 'sender', 'receiver', 'is_accepted', 'is_rejected', 'creation_date']
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    """
+    Serializer for Google authentication requests.
+    This makes the DRF browsable API show proper form fields.
+    """
+    id_token = serializers.CharField(
+        required=True,
+        help_text="Google ID token received from Google Sign-In",
+        style={'placeholder': 'Google ID token...'}
+    )
+    PLATFORM_CHOICES = [
+        ('web', 'Web'),
+        ('ios', 'iOS'),
+        ('android', 'Android'),
+    ]
+
+    platform = serializers.ChoiceField(
+        choices=PLATFORM_CHOICES,
+        required=False,
+        default='web',
+        help_text="Platform: web, ios, or android",
+        style={'placeholder': 'web, ios, or android'}
+    )
