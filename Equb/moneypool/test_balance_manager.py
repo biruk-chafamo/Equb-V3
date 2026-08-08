@@ -28,3 +28,10 @@ class TestSelectWinnerNeverRepeats:
         assert equb.is_completed is True
 
 
+@pytest.mark.django_db
+class TestBidRankingAdapter:
+    def test_is_highest_bid_true_for_first_bid(self):
+        equb, members = _make_full_equb(max_members=2)
+        bid = Bid.objects.create(equb=equb, user=members[0], round=1, amount=Decimal("0.100"))
+        assert bid.is_highest_bid() is True
+
