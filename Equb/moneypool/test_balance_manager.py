@@ -35,3 +35,10 @@ class TestBidRankingAdapter:
         bid = Bid.objects.create(equb=equb, user=members[0], round=1, amount=Decimal("0.100"))
         assert bid.is_highest_bid() is True
 
+    def test_is_highest_bid_false_for_lower_bid(self):
+        equb, members = _make_full_equb(max_members=3)
+        first = place_bid(members[0], equb, Decimal("0.500"))
+        assert first.is_highest_bid() is False
+        lower = Bid.objects.create(equb=equb, user=members[1], round=1, amount=Decimal("0.100"))
+        assert lower.is_highest_bid() is False
+
