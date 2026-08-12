@@ -17,8 +17,8 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 
 django_asgi_app = get_asgi_application()
 
-from moneypool.routing import websocket_urlpatterns
-from moneypool.jwt_middleware import JWTAuthMiddleware
+from moneypool.realtime.routing import websocket_urlpatterns
+from moneypool.realtime.jwt_middleware import JWTAuthMiddleware
 
 application = ProtocolTypeRouter(
     {

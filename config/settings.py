@@ -243,7 +243,7 @@ LOGGING = {
         'handlers': ['console'],
     },
     'loggers': {
-        'moneypool.consumers': {
+        'moneypool.realtime.consumers': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,

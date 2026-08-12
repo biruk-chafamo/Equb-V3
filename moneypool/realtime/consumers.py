@@ -3,7 +3,7 @@ from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
 import logging
 
-from .models import *
+from ..models import *
 
 logger = logging.getLogger(__name__)
 

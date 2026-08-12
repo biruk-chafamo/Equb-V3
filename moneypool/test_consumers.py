@@ -8,8 +8,8 @@ from channels.testing import WebsocketCommunicator
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .factories import EqubFactory, UserFactory
-from .jwt_middleware import JWTAuthMiddleware
-from .routing import websocket_urlpatterns
+from .realtime.jwt_middleware import JWTAuthMiddleware
+from .realtime.routing import websocket_urlpatterns
 
 application = JWTAuthMiddleware(URLRouter(websocket_urlpatterns))
 
