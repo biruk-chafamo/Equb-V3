@@ -3,8 +3,8 @@ version: '3.8'
 services:
   django:
     build:
-      context: ..
-      dockerfile: Equb/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     container_name: django
     command: >
       sh -c "python3 manage.py migrate &&
@@ -26,8 +26,8 @@ services:
 
   background_tasks:
     build:
-      context: ..
-      dockerfile: Equb/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     image: app
     container_name: background_tasks
     command: python manage.py process_tasks

@@ -83,7 +83,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-ROOT_URLCONF = 'Equb.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
@@ -101,8 +101,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'Equb.wsgi.application'
-ASGI_APPLICATION = "Equb.asgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = "config.asgi.application"
 
 
 # Database

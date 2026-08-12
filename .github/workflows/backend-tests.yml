@@ -35,7 +35,7 @@ jobs:
           --health-retries 10
 
     env:
-      DJANGO_SETTINGS_MODULE: Equb.settings_test
+      DJANGO_SETTINGS_MODULE: config.settings_test
       POSTGRES_DB: equb_test
       POSTGRES_USER: equb_test
       POSTGRES_PASSWORD: equb_test

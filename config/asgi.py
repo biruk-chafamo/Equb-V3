@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.0/howto/deployment/asgi/
 
 import os
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Equb.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
