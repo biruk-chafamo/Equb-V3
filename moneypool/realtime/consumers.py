@@ -1,6 +1,7 @@
 import json
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import WebsocketConsumer
+from django.db import close_old_connections
 import logging
 
 from ..models import *
@@ -22,17 +23,25 @@ class EqubConsumer(WebsocketConsumer):
                 self.close()
                 return
 
-            equbs = user.joined_equbs.filter(is_completed=False)
-            logger.info(f"User has {equbs.count()} incomplete equbs")
+            equb_ids = list(
+                user.joined_equbs.filter(is_completed=False).values_list('id', flat=True)
+            )
+            logger.info(f"User has {len(equb_ids)} incomplete equbs")
 
-            for equb in equbs:
-                self._subscribe(equb.id)
+            for equb_id in equb_ids:
+                self._subscribe(equb_id)
 
             self.accept()
 
         except Exception as e:
             logger.error(f"Error during WebSocket connect: {e}")
             self.close()
+        finally:
+            # A sync consumer keeps its worker thread for the life of the socket,
+            # and Django only closes connections on request_finished, which a
+            # websocket never fires. Without this each open socket pins a
+            # connection until the pool is exhausted.
+            close_old_connections()
 
     def disconnect(self, code):
         logger.info(f"WebSocket disconnected with code: {code}")
@@ -55,7 +64,12 @@ class EqubConsumer(WebsocketConsumer):
         if equb_id is None or user is None or user.is_anonymous:
             return
 
-        if not user.joined_equbs.filter(id=equb_id).exists():
+        try:
+            is_member = user.joined_equbs.filter(id=equb_id).exists()
+        finally:
+            close_old_connections()
+
+        if not is_member:
             logger.warning(f"user {user.id} tried to subscribe to equb {equb_id} without membership")
             return
 

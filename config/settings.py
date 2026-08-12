@@ -135,8 +135,11 @@ CHANNEL_LAYERS = {
 }
 
 if PROD:
-    db_from_env = dj_database_url.config(conn_max_age=600)
-    DATABASES['default'].update(db_from_env)    
+    # Persistent connections need spare capacity we do not have: the plan caps
+    # us at 20, and daphne runs each request and each websocket consumer on its
+    # own pool thread, so any non-zero age pins connections until exhaustion.
+    db_from_env = dj_database_url.config(conn_max_age=0)
+    DATABASES['default'].update(db_from_env)
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
