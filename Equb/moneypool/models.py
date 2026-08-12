@@ -2,16 +2,14 @@ from django.db import models, transaction
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
-from django.dispatch import Signal
 
 import datetime
-import random
 import logging
-import decimal
-import pytz
 
 from rest_framework import serializers
 from guardian.shortcuts import assign_perm
+
+from .domain import settlement
 
 class User(AbstractUser):
     first_name = models.CharField(max_length=150)
@@ -138,8 +136,6 @@ class Win(models.Model):
     def __str__(self):
         return str(self.user.username) + ' won round ' + str(self.round)
 
-new_round_signal = Signal()
-
 class BalanceManager(models.Model):
     equb = models.OneToOneField(to=Equb, on_delete=models.CASCADE, related_name='balance_manager')
     received = models.ManyToManyField(User, blank=True, related_name='received_equb_managers')
@@ -185,8 +181,8 @@ class BalanceManager(models.Model):
                 "seconds": 0
             }
         else: 
-            next_round_time = self.current_round_start_date.replace(tzinfo=pytz.UTC) + self.equb.cycle
-            delta = next_round_time - datetime.datetime.now(tz=pytz.UTC)
+            next_round_time = self.current_round_start_date + self.equb.cycle
+            delta = next_round_time - timezone.now()
             days = delta.days
             hours, remainder = divmod(delta.seconds, 3600)
             minutes, _ = divmod(remainder, 60)
@@ -237,7 +233,7 @@ class BalanceManager(models.Model):
         """
         win_dates = [win.date for win in self.wins.all()]
         if self.current_round_start_date and self.finished_rounds < self.equb.max_members:
-            next_win_date = self.current_round_start_date.replace(tzinfo=pytz.UTC) + self.equb.cycle
+            next_win_date = self.current_round_start_date + self.equb.cycle
             win_dates.append(next_win_date)
         return win_dates
 
@@ -260,85 +256,39 @@ class BalanceManager(models.Model):
             received = self.received.all()
             not_received = all_members.difference(received)
             logging.info(f'{not_received.count()} member have not won yet')
-            
+
             if not_received:
-                win = Win.objects.create(
-                    user=highest_bid.bid.user if highest_bid.bid else random.choice(not_received), 
-                    round=current_round
-                )
+                highest_bidder = highest_bid.bid.user if highest_bid.bid else None
+                winning_user = settlement.pick_winner(highest_bidder, list(not_received))
+                win = Win.objects.create(user=winning_user, round=current_round)
                 self.wins.add(win)
                 logging.info(f'{win.user.username} won round {current_round}')
                 self.received.add(win.user)
                 return win.user
-        
+
     def calculate_winners_award(self, round):
         equb = self.equb
-        highest_bid = equb.highest_bids.get(round=round) 
-        if highest_bid.bid:
-            bid_amount = highest_bid.bid.amount
-        else:
-            bid_amount = 0
-        
-        deductible_portion = equb.amount * decimal.Decimal(1 - 1 / equb.max_members)
-        deducted_award = deductible_portion * decimal.Decimal(1 - bid_amount)
-        non_deductible_award = equb.amount / equb.max_members
-        award = non_deductible_award + deducted_award
-        
-        return award
-    
+        highest_bid = equb.highest_bids.get(round=round)
+        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
+        not_received_count = equb.members.all().difference(self.received.all()).count()
+        return settlement.compute_award(equb.amount, equb.max_members, bid_amount, not_received_count)
+
     def calculate_losers_deductions(self, member, round):
         """
-        calculates the amount each member must pay in the next round; 
+        calculates the amount each member must pay in the next round;
         amount of deduction depends on whether the member has received equb in previous rounds.
         """
         equb = self.equb
         all_members = equb.members.all()
-        not_received = all_members.difference(self.received.all())
-        max_members = equb.max_members
-        highest_bid = equb.highest_bids.get(round=round) 
+        received = self.received.all()
+        not_received = all_members.difference(received)
+        highest_bid = equb.highest_bids.get(round=round)
+        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
 
-        if highest_bid.bid:
-            bid_amount = highest_bid.bid.amount
-        else:
-            bid_amount = 0
-
-        # winner's contribution = 0 if there is no bid
-        winners_contribution = equb.amount * decimal.Decimal((1 - 1 / max_members)) * decimal.Decimal((bid_amount))
-
-        if member in not_received: 
-            return (equb.amount / max_members) - (winners_contribution / not_received.count())
-        elif member in self.received.all():
-            return equb.amount / max_members
-        else: # winner
-            return 0
-        
-
-    def update_winner_account(self):
-        """
-        adds the total value of equb to winners account minus the percentage
-        of this amount equal to what was bid
-        """
-        winner = self.select_winner()
-        award = self.calculate_winners_award(self.finished_rounds + 1)
-        if winner:
-            logging.info(f'award {award} bank account {winner.bank_account}')
-            winner.bank_account += award  # amount = equb value if highest bid = 0
-            winner.save()
-            logging.info(f'{winner.username} award {award}')
-
-    def collect_money(self):
-        """
-        deducts the correct amount from equb members.
-        Distributes the highest bid to those who haven't
-        received their equbs yet. Those who received their
-        equb won't benefit from the bid.
-        """
-
-        current_round = self.finished_rounds + 1
-        for member in self.equb.members.all(): 
-            member.bank_account -= self.calculate_losers_deductions(member, current_round)
-            member.save()
-            
+        return settlement.compute_deduction(
+            equb.amount, equb.max_members, bid_amount,
+            in_not_received=member in not_received,
+        )
 
     def setup_next_round(self):
         self.equb.is_in_payment_stage = False
@@ -349,11 +299,17 @@ class BalanceManager(models.Model):
         self.save()
         
         if self.equb.max_members == self.finished_rounds:
-            self.equb.is_completed = True  
-            self.equb.end_date = timezone.now()          
+            self.equb.is_completed = True
+            self.equb.end_date = timezone.now()
             self.equb.save()
         else:
-            new_round_signal.send(sender=self.__class__, instance = self, equb=self.equb)
+            from .adapters.system_clock import default_clock
+            self.current_round_start_date = default_clock.now()
+            self.save()
+            HighestBid.objects.create(equb=self.equb, round=self.finished_rounds + 1)
+
+            from .adapters.django_notifier import default_notifier
+            default_notifier.round_advanced(self.equb)
 
 
 class Bid(models.Model):
@@ -384,10 +340,8 @@ class Bid(models.Model):
 
     def is_highest_bid(self):
         highest_bid = HighestBid.objects.get(equb=self.equb, round=self.round)
-        if not highest_bid.bid or (highest_bid.bid and self.amount > highest_bid.bid.amount):
-            return True
-        else:
-            return False
+        current_highest_amount = highest_bid.bid.amount if highest_bid.bid else None
+        return settlement.is_higher_bid(self.amount, current_highest_amount)
 
     def make_highest_bid(self):
         highest_bid = HighestBid.objects.get(equb=self.equb, round=self.round)
@@ -445,7 +399,8 @@ class EqubJoinRequest(Request):
 
     def accept(self):
         if not self.equb.is_active and self.sender:
-            self.equb.members.add(self.sender)
+            from .services.equb_service import add_member
+            add_member(self.equb, self.sender)
         else:
             raise serializers.ValidationError({"is_accepted": f"{self.equb.name} has already began"})
 
@@ -454,9 +409,9 @@ class EqubInviteRequest(Request):
     equb = models.ForeignKey(to=Equb, on_delete=models.CASCADE, related_name='%(class)ss')
 
     def accept(self):
-        # equb must not be active
         if not self.equb.is_active:
-            self.equb.members.add(self.receiver)
+            from .services.equb_service import add_member 
+            add_member(self.equb, self.receiver)
         else:
             raise serializers.ValidationError({"is_accepted": f"{self.equb.name} has already began"})
 

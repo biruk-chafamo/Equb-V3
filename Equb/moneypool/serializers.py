@@ -7,6 +7,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 
 from .models import *
+from .domain import validation
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
@@ -34,12 +35,12 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         # not setting uniquness an non-null constraint in the ORM to avoid back filling the database
-        if attrs.get('email') == '' or attrs.get('email') is None:
+        if validation.is_blank_email(attrs.get('email')):
             raise serializers.ValidationError({"email": "This field may not be blank."})
         if User.objects.filter(email=attrs.get('email')).exists():
             raise serializers.ValidationError({"email": "This email is already used by a different account."})
-        
-        if attrs.get('password') != attrs.get('password2'):
+
+        if not validation.passwords_match(attrs.get('password'), attrs.get('password2')):
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         return attrs
 
@@ -109,9 +110,9 @@ class EqubSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         max_members = attrs.get('max_members')
 
-        if max_members < 2:
+        if validation.is_max_members_too_low(max_members):
             raise serializers.ValidationError({"max_members": "An equb must have at least 2 members."})
-        if max_members > 20:
+        if validation.is_max_members_too_high(max_members):
             raise serializers.ValidationError({"max_members": "An equb cannot have more than 20 members."})
         if self.instance:
             raise serializers.ValidationError({"equb": "Equbs cannot be updated once created."})
@@ -231,9 +232,9 @@ class BidSerializer(serializers.HyperlinkedModelSerializer):
         user = self.context.get('request').user
         equb = attrs.get('equb')
 
-        if user not in equb.members.all():
+        if not validation.is_member(user, equb.members.all()):
             raise serializers.ValidationError({"user": f'You are not a member of {equb.name}.'})
-        if user in equb.balance_manager.received.all():
+        if validation.is_member(user, equb.balance_manager.received.all()):
             raise serializers.ValidationError({"user": f'You cannot place a bid because you have already won a round for {equb.name}.'})
         if equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer place a bid in {equb.name}."})
@@ -241,6 +242,8 @@ class BidSerializer(serializers.HyperlinkedModelSerializer):
             raise serializers.ValidationError({"equb": f"{equb.name} is not yet active."})
         if equb.is_in_payment_stage:
             raise serializers.ValidationError({"equb": f"you cannot place a bid in {equb.name} because it is in the payment stage."})
+        if validation.is_final_round(equb.balance_manager.current_round(), equb.max_members):
+            raise serializers.ValidationError({"equb": f"There is only one member left to receive the pot in {equb.name} -- bidding has no effect on the final round."})
         return attrs
     amount = serializers.DecimalField(max_digits=10, decimal_places=3, max_value=Decimal(1.000), min_value=Decimal(0.001))
     class Meta:
@@ -260,7 +263,7 @@ class EqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
         sender = self.context.get('request').user
         equb = attrs.get('equb')
 
-        if sender in equb.members.all():
+        if validation.is_member(sender, equb.members.all()):
             raise serializers.ValidationError({"receiver": f'You are already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer request to join {equb.name}."})
@@ -303,9 +306,9 @@ class EqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
         # TODO: think about how invitations should be handled
         # if sender != equb.creator:
         #     raise serializers.ValidationError({"sender": "Only the equb creator can send an invitation."})
-        if sender not in equb.members.all():
+        if not validation.is_member(sender, equb.members.all()):
             raise serializers.ValidationError({"sender": f'only members of {equb.name} can send invitations.'})
-        if receiver in equb.members.all():
+        if validation.is_member(receiver, equb.members.all()):
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer invite others to join {equb.name}"})
@@ -342,9 +345,9 @@ class FriendRequestSerializer(serializers.HyperlinkedModelSerializer):
         sender = self.context.get('request').user
         receiver = attrs.get('receiver')
 
-        if sender == receiver:
+        if validation.is_self_request(sender, receiver):
             raise serializers.ValidationError({"receiver": f'you cannot send a friend request to yourself.'})
-        if receiver in sender.friends.all():
+        if validation.is_member(receiver, sender.friends.all()):
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already your friend.'})
         if FriendRequest.objects.filter(sender=sender, receiver=receiver, is_accepted=False, is_expired=False, is_rejected=False).exists():
             raise serializers.ValidationError({"receiver": f'You have already sent a friend request to {receiver.username}.'})
@@ -376,7 +379,7 @@ class AddressPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSe
     payment_method = PaymentMethodSerializer(read_only=True)
 
     def validate(self, attrs):
-        if attrs.get('is_accepted') and attrs.get('is_rejected'):
+        if validation.is_accept_and_reject_conflict(attrs.get('is_accepted'), attrs.get('is_rejected')):
             raise serializers.ValidationError({"is_accepted": "You cannot accept and reject a payment request."})
         return attrs
 
@@ -395,31 +398,38 @@ class ListPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSeria
         read_only_fields = ['id', 'sender', 'receiver', 'is_accepted', 'is_rejected', 'creation_date']
 
 class PaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerializer):
+    sender = ListUserSerializer(read_only=True)
+
+    def to_representation(self, instance):
+        response = super().to_representation(instance)
+        response['payment_method'] = PaymentMethodSerializer(instance.payment_method, context=self.context).data
+        return response
 
     def validate(self, attrs):
         sender = self.context.get('request').user
-        receiver = attrs.get('receiver')
         equb = attrs.get('equb')
         round = attrs.get('round')
-        
-        # if payment method is not shared between sender and receiver then raise error
-        if not PaymentMethod.objects.filter(user=receiver, service=attrs.get('payment_method').service).exists():
-            raise serializers.ValidationError({"payment_method": "You must use a payment method that is also used by the receiver."})
+
         if not equb.is_active:
             raise serializers.ValidationError({"equb": f"{equb.name} is not yet active."})
         if equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer send payment requests for {equb.name}."})
-        if equb.balance_manager.wins.filter(round=round).count() == 0:
-            raise serializers.ValidationError({"equb": f"Payment requests cannot be sent until a winner is determined."})
+
+        win = equb.balance_manager.wins.filter(round=round).first()
+        if win is None:
+            raise serializers.ValidationError({"round": f"Payment requests cannot be sent until a winner is determined for this round."})
+        receiver = win.user
+
+        # if payment method is not shared between sender and receiver then raise error
+        if not PaymentMethod.objects.filter(user=receiver, service=attrs.get('payment_method').service).exists():
+            raise serializers.ValidationError({"payment_method": "You must use a payment method that is also used by the receiver."})
         if PaymentConfirmationRequest.objects.filter(sender=sender, receiver=receiver, equb=equb, round=round, is_accepted=False).exists():
             raise serializers.ValidationError({"receiver": f'You have an existing pending payment request to {receiver.username} for this round.'})
         if sender == receiver:
             raise serializers.ValidationError({"receiver": f'you cannot send a payment request to yourself.'})
+
+        attrs['receiver'] = receiver
         return attrs
-    
-    # service = serializers.ChoiceField(choices=ServiceChoices.choices)
-    sender = ListUserSerializer(read_only=True)
-    # payment_method = PaymentMethodSerializer()
 
     class Meta:
         model = PaymentConfirmationRequest

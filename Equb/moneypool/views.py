@@ -20,6 +20,8 @@ from enum import Enum
 from .serializers import *
 from .models import *
 from .permissions import *
+from .services import equb_service
+from .adapters.django_notifier import default_notifier
 
 
 class AuthPlatform(Enum):
@@ -182,8 +184,9 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         return combined_equbs.distinct()
         
     def perform_create(self, serializer):
-        serializer.save(creator=self.request.user)
-        
+        equb = equb_service.create_equb(creator=self.request.user, **serializer.validated_data)
+        serializer.instance = equb
+
     @action(detail=False, methods=['get'], url_path='activeequbs')
     def active_equbs(self, request):
         """
@@ -275,10 +278,12 @@ class BidViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         return Bid.objects.filter(equb__in=equbs) # all bids that belong to equbs joined by current user
 
     def perform_create(self, serializer):
-        serializer.save(
-            user=self.request.user, date=timezone.now(), 
-            round=serializer.validated_data['equb'].balance_manager.finished_rounds + 1
+        bid = equb_service.place_bid(
+            user=self.request.user,
+            equb=serializer.validated_data['equb'],
+            amount=serializer.validated_data['amount'],
         )
+        serializer.instance = bid
 
 
 class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
@@ -392,24 +397,24 @@ class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, v
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
             return AddressPaymentConfirmationRequestSerializer
+        elif self.request.method in ['POST']:
+            return PaymentConfirmationRequestSerializer
         else:
             return ListPaymentConfirmationRequestSerializer
 
     def perform_create(self, serializer):
         balance_manager = serializer.validated_data['equb'].balance_manager
         round = serializer.validated_data['round']
-        payment_method = serializer.validated_data['payment_method']
-        
+
         sender = self.request.user
         amount = balance_manager.calculate_losers_deductions(sender, round)
-        # payment_method = sender.selected_payment_methods.get(service=service)
-        
+
         serializer.save(
             sender=sender,
-            receiver=balance_manager.wins.get(round=round).user,
+            receiver=serializer.validated_data['receiver'],
             amount=amount,
-            payment_method=payment_method
         )
+        default_notifier.payment_confirmation_requested(serializer.instance)
 
     @action(detail=False, methods=['get'], url_path='by-equb-round')
     def get_by_equb_and_round(self, request):
