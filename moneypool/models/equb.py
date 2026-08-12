@@ -118,8 +118,7 @@ class BalanceManager(models.Model):
             delta = next_round_time - timezone.now()
             days = delta.days
             hours, remainder = divmod(delta.seconds, 3600)
-            minutes, _ = divmod(remainder, 60)
-            seconds = delta.seconds
+            minutes, seconds = divmod(remainder, 60)
 
             time_delta_dict = {
                 "days": days,
