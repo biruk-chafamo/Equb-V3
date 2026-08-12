@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 
 from decimal import Decimal
 
-from .serializers import *
+from .api.serializers import *
 from .models import *
 from .tasks import select_winner_task
 

@@ -11,17 +11,16 @@ from django.db.models import Q
 from django.conf import settings
 import stripe
 
-# Google authentication imports
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework_simplejwt.tokens import RefreshToken
 from enum import Enum
 
-from .serializers import *
-from .models import *
-from .permissions import *
-from .services import equb_service
-from .adapters.django_notifier import default_notifier
+from ..serializers import *
+from ...models import *
+from ..permissions import *
+from ...services import equb_service
+from ...adapters.django_notifier import default_notifier
 
 
 class AuthPlatform(Enum):
@@ -168,289 +167,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return paginator.get_paginated_response(serializer.data)
 
     
-class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-    """
-    equbs joined by a user to be viewed or edited.
-    """
-
-    serializer_class = EqubSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        joined_equbs = user.joined_equbs.all()
-        invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
-        recommended_equbs = Equb.objects.filter(id__in=NewEqubNotification.objects.filter(receiver=user, equb__is_active=False).values_list('equb__id', flat=True))
-        combined_equbs = joined_equbs | invited_equbs | recommended_equbs
-        return combined_equbs.distinct()
-        
-    def perform_create(self, serializer):
-        equb = equb_service.create_equb(creator=self.request.user, **serializer.validated_data)
-        serializer.instance = equb
-
-    @action(detail=False, methods=['get'], url_path='activeequbs')
-    def active_equbs(self, request):
-        """
-        get equbs that user has joined and are active
-        """
-        user = self.request.user
-        equbs = user.joined_equbs.filter(is_active=True, is_completed=False)
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'], url_path='pendingequbs')
-    def pending_equbs(self, request):
-        """
-        get equbs that user has joined and are not active but not completed
-        """
-        user = self.request.user
-        equbs = user.joined_equbs.filter(is_active=False, is_completed=False)
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='invitedequbs')
-    def invited_equbs(self, request):
-        """
-        get equbs that user has been invited to
-        """
-        user = self.request.user
-        invitations = user.received_equbinviterequests.all()
-        equbs = [invitation.equb for invitation in invitations]
-        # making sure that the equbs are not active and user has not joined them
-        equbs = [equb for equb in equbs if not equb.is_active and not user.joined_equbs.filter(id=equb.id).exists()]
-        equbs = list(set(equbs))
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'], url_path='pastequbs')
-    def past_equbs(self, request):
-        """
-        get equbs that user has completed
-        """
-        user = self.request.user
-        equbs = user.joined_equbs.filter(is_completed=True)
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'], url_path='recommendedequbs')
-    def recommended_equbs(self, request):
-        """
-        get new public equbs that have been created by users friends
-        """
-        user = self.request.user
-        new_equb_notifications = NewEqubNotification.objects.filter(receiver=user, equb__is_active=False)
-        equbs = [notification.equb for notification in new_equb_notifications]
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-   
-    @action(detail=False, methods=['get'], url_path='by-user')
-    def by_user(self, request):
-        """
-        get public equbs that a specific user has joined, or the specified user's private 
-        equbs that the current user has access to through invitation or shared membership.
-        """
-        user_id = request.query_params.get('user')
-        if not user_id:
-            return Response(
-                {"detail": "User is a required parameter."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        user = User.objects.get(id=user_id)
-        current_user = self.request.user
-        public_equbs = user.joined_equbs.filter(is_private=False)
-        shared_private_equbs = user.joined_equbs.filter(is_private=True, members__in=[current_user])
-        current_user_invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
-        invited_private_equbs = current_user_invited_equbs.filter(is_private=True, members__in=[user])
-        equbs = public_equbs | shared_private_equbs | invited_private_equbs
-        serializer = self.get_serializer(equbs, many=True)
-        return Response(serializer.data)
-
-class BidViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-    """
-    place and view bids for an equb.
-    """
-
-    serializer_class = BidSerializer
-
-    def get_queryset(self):
-        equbs = self.request.user.joined_equbs.all()
-        if equbs is None:
-            return None
-        return Bid.objects.filter(equb__in=equbs) # all bids that belong to equbs joined by current user
-
-    def perform_create(self, serializer):
-        bid = equb_service.place_bid(
-            user=self.request.user,
-            equb=serializer.validated_data['equb'],
-            amount=serializer.validated_data['amount'],
-        )
-        serializer.instance = bid
-
-
-class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-
-    def get_queryset(self):
-        user = self.request.user
-        return user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.request.method in ['PUT', 'PATCH']:
-            return AcceptEqubJoinRequestSerializer
-        else:
-            return EqubJoinRequestSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user, receiver=serializer.validated_data['equb'].creator)
-
-
-class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-
-    def get_queryset(self):
-        user = self.request.user
-        equbs = user.joined_equbs.all()
-        invites_to_joined_equbs = EqubInviteRequest.objects.filter(equb__in=equbs)
-        received = user.received_equbinviterequests.all()
-        return received | invites_to_joined_equbs
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.request.method in ['PUT', 'PATCH']:
-            return AcceptEqubInviteRequestSerializer
-        else:
-            return EqubInviteRequestSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
-
-    @action(detail=False, methods=['get'], url_path='received')
-    def received(self, request):
-        """
-        get equb invitations received by user
-        """
-        user = self.request.user
-        invitations = user.received_equbinviterequests.filter(is_accepted=False, is_rejected=False, is_expired=False)
-        # making sure that the equbs are not active and user has not joined them
-        invitations = [invitation for invitation in invitations if not user.joined_equbs.filter(id=invitation.equb.id).exists()]
-        serializer = self.get_serializer(invitations, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='by-equb')
-    def by_equb(self, request):
-        """
-        get equb invitations sent to anyone for a specific equb
-        """
-        equb_id = request.query_params.get('equb')
-        if not equb_id:
-            return Response(
-                {"detail": "Equb is a required parameter."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        invitations = EqubInviteRequest.objects.filter(equb=equb_id)
-        serializer = self.get_serializer(invitations, many=True)
-        return Response(serializer.data)
-
-class FriendRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        received = user.received_friendrequests.all()
-        sent = user.sent_friendrequests.all()
-        return received | sent
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.request.method in ['PUT', 'PATCH']:
-            return AcceptFriendRequestSerializer
-        else:
-            return FriendRequestSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
-
-    @action(detail=False, methods=['get'], url_path='received')
-    def received(self, request):
-        """
-        get friend requests received by user
-        """
-        user = self.request.user
-        requests = user.received_friendrequests.filter(is_accepted=False, is_rejected=False, is_expired=False)
-        serializer = self.get_serializer(requests, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'], url_path='sent')
-    def sent(self, request):
-        """
-        get friend requests sent by user
-        """
-        user = self.request.user
-        requests = user.sent_friendrequests.filter(is_accepted=False, is_rejected=False, is_expired=False)
-        serializer = self.get_serializer(requests, many=True)
-        return Response(serializer.data)
-
-class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        received = user.received_paymentconfirmationrequests.all()
-        sent = user.sent_paymentconfirmationrequests.all()
-        return received | sent
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.request.method in ['PUT', 'PATCH']:
-            return AddressPaymentConfirmationRequestSerializer
-        elif self.request.method in ['POST']:
-            return PaymentConfirmationRequestSerializer
-        else:
-            return ListPaymentConfirmationRequestSerializer
-
-    def perform_create(self, serializer):
-        balance_manager = serializer.validated_data['equb'].balance_manager
-        round = serializer.validated_data['round']
-
-        sender = self.request.user
-        amount = balance_manager.calculate_losers_deductions(sender, round)
-
-        serializer.save(
-            sender=sender,
-            receiver=serializer.validated_data['receiver'],
-            amount=amount,
-        )
-        default_notifier.payment_confirmation_requested(serializer.instance)
-
-    @action(detail=False, methods=['get'], url_path='by-equb-round')
-    def get_by_equb_and_round(self, request):
-        '''
-        get all confirmed or unconfirmed payment confirmation requests
-        for a specific equb and round. This excludes all rejected requests.
-        '''
-        equb_id = request.query_params.get('equb')
-        round = request.query_params.get('round')
-
-        if not equb_id or not round:
-            return Response(
-                {"detail": "Equb and round are required parameters."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        queryset = PaymentConfirmationRequest.objects.filter(equb=equb_id, round=round, is_rejected=False)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-class PaymentMethodViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-    serializer_class = PaymentMethodSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        return user.selected_payment_methods.all()
-    
-    def perform_create(self, serializer):        
-        serializer.save(user=self.request.user)
-
-    @action(detail=False, methods=['get'], url_path='services')
-    def services(self, request):
-        """
-        get all available payment services as a list of strings
-        """
-        services = [service[0] for service in ServiceChoices.choices]
-        return Response(services)
 
 
 @api_view(['POST'])
@@ -461,7 +177,7 @@ def google_auth(request):
     Handles email conflicts with existing password-based accounts.
     """
     # Validate request data using serializer
-    from .serializers import GoogleAuthSerializer
+    from ..serializers import GoogleAuthSerializer
     serializer = GoogleAuthSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -525,7 +241,7 @@ def google_auth(request):
         refresh = RefreshToken.for_user(user)
         
         # Return the tokens and user data
-        from .serializers import ListUserSerializer
+        from ..serializers import ListUserSerializer
         return Response({
             'access': str(refresh.access_token),
             'refresh': str(refresh),
@@ -673,6 +389,3 @@ def smart_password_reset(request):
             'error': 'reset_failed',
             'message': 'Password reset request failed. Please try again.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
