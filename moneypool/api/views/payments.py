@@ -19,7 +19,7 @@ from enum import Enum
 from ..serializers import *
 from ...models import *
 from ..permissions import *
-from ...services import equb_service
+from ...services import equb_service, settlement_service
 from ...adapters.django_notifier import default_notifier
 
 
@@ -45,7 +45,7 @@ class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, v
         round = serializer.validated_data['round']
 
         sender = self.request.user
-        amount = balance_manager.calculate_losers_deductions(sender, round)
+        amount = settlement_service.calculate_losers_deductions(balance_manager, sender, round)
 
         serializer.save(
             sender=sender,

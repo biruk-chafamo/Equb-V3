@@ -16,7 +16,11 @@ from moneypool.tests.factories import (
 )
 from moneypool.models import BalanceManager, ServiceChoices
 from moneypool.services.equb_service import add_member, place_bid
-from moneypool.services.settlement_service import setup_next_round
+from moneypool.services.settlement_service import (
+    calculate_losers_deductions,
+    calculate_winners_award,
+    setup_next_round,
+)
 from moneypool.tasks import select_winner_task
 
 _bids = st.one_of(
@@ -56,10 +60,10 @@ def _run_equb(max_members, amount, bid_plan):
         winner = manager.latest_winner()
         winners.append(winner)
         waiting_counts.append(equb.members.all().difference(manager.received.all()).count())
-        awards.append(manager.calculate_winners_award(round_number))
+        awards.append(calculate_winners_award(manager, round_number))
         deductions.append(
             {
-                member.pk: manager.calculate_losers_deductions(member, round_number)
+                member.pk: calculate_losers_deductions(manager, member, round_number)
                 for member in equb.members.all()
                 if member != winner
             }
@@ -196,9 +200,9 @@ def test_displayed_award_equals_the_cash_the_winner_receives(make_authed_client)
     equb.refresh_from_db()
     manager = BalanceManager.objects.get(equb=equb)
 
-    displayed = manager.calculate_winners_award(1)
+    displayed = calculate_winners_award(manager, 1)
     collected = sum(
-        manager.calculate_losers_deductions(member, 1)
+        calculate_losers_deductions(manager, member, 1)
         for member in equb.members.all()
         if member != manager.latest_winner()
     )

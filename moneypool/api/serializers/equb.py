@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 
 from ...models import *
 from ...domain import validation
+from ...services import settlement_service
 from .identity import ListUserSerializer
 
 
@@ -74,7 +75,7 @@ class EqubSerializer(serializers.ModelSerializer):
     
     def get_current_award(self, equb):
         balace_manager = equb.balance_manager
-        return balace_manager.calculate_winners_award(balace_manager.current_round())
+        return settlement_service.calculate_winners_award(balace_manager, balace_manager.current_round())
     
     def get_current_highest_bid(self, equb):
         highest_bid = HighestBid.objects.get(equb=equb, round=equb.balance_manager.current_round()).bid

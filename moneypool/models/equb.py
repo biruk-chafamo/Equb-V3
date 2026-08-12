@@ -181,26 +181,3 @@ class BalanceManager(models.Model):
     def latest_winner(self):
         return self.wins.first().user if self.wins.exists() else None
     
-    def calculate_winners_award(self, round):
-        equb = self.equb
-        highest_bid = equb.highest_bids.get(round=round)
-        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
-        not_received_count = equb.members.all().difference(self.received.all()).count()
-        return settlement.compute_award(equb.amount, equb.max_members, bid_amount, not_received_count)
-
-    def calculate_losers_deductions(self, member, round):
-        """
-        calculates the amount each member must pay in the next round;
-        amount of deduction depends on whether the member has received equb in previous rounds.
-        """
-        equb = self.equb
-        all_members = equb.members.all()
-        received = self.received.all()
-        not_received = all_members.difference(received)
-        highest_bid = equb.highest_bids.get(round=round)
-        bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
-
-        return settlement.compute_deduction(
-            equb.amount, equb.max_members, bid_amount,
-            in_not_received=member in not_received,
-        )

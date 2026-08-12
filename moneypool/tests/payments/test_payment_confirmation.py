@@ -11,6 +11,7 @@ from moneypool.tests.factories import (
     make_full_equb_via_join_requests as _make_full_equb,
 )
 from moneypool.models import PaymentConfirmationRequest, ServiceChoices, Win, User
+from moneypool.services.settlement_service import calculate_losers_deductions
 from moneypool.tasks import select_winner_task
 
 
@@ -41,7 +42,7 @@ class TestPaymentConfirmationLifecycle:
         }
         response = client1.post(reverse("paymentconfirmationrequest-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
-        expected_deduction = equb.balance_manager.calculate_losers_deductions(member=user1, round=1)
+        expected_deduction = calculate_losers_deductions(equb.balance_manager, member=user1, round=1)
         assert PaymentConfirmationRequest.objects.get(equb=equb, sender=user1).amount == expected_deduction
 
         client0.patch(response.data["url"], {"is_accepted": True}) # this initiates round 2
@@ -62,7 +63,7 @@ class TestPaymentConfirmationLifecycle:
         }
         response = client0.post(reverse("paymentconfirmationrequest-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
-        expected_deduction_2 = equb.balance_manager.calculate_losers_deductions(member=user0, round=2)
+        expected_deduction_2 = calculate_losers_deductions(equb.balance_manager, member=user0, round=2)
         assert PaymentConfirmationRequest.objects.get(equb=equb, sender=user0).amount == expected_deduction_2
 
         # accepting completes the equb

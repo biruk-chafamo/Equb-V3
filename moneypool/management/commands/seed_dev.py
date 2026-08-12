@@ -17,7 +17,11 @@ from ...models import (
     Win,
 )
 from ...services.equb_service import add_member, create_equb, place_bid
-from ...services.settlement_service import select_winner, setup_next_round
+from ...services.settlement_service import (
+    calculate_losers_deductions,
+    select_winner,
+    setup_next_round,
+)
 
 PASSWORD = "equbtest123"
 CYCLE = datetime.timedelta(days=7)
@@ -201,7 +205,7 @@ class Command(BaseCommand):
                 equb=equb,
                 round=round_no,
                 payment_method=member.selected_payment_methods.first(),
-                amount=manager.calculate_losers_deductions(member, round_no),
+                amount=calculate_losers_deductions(manager, member, round_no),
                 message=f"payment for round {round_no}",
             )
 
