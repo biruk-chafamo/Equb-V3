@@ -158,10 +158,10 @@ class UserViewSet(viewsets.ModelViewSet):
             Q(last_name__icontains=name) | 
             Q(username__icontains=name)
         ).exclude(
-            Q(id=request.user.id) | 
-            Q(username__in=['deleted', 'AnonymousUser']) | 
+            Q(id=request.user.id) |
+            Q(username__in=['deleted', 'AnonymousUser']) |
             Q(is_staff=True)
-        )
+        ).order_by('id')
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = self.get_serializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
