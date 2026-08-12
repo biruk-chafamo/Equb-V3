@@ -11,3 +11,8 @@ equb_venv/
 credentials/
 
 .DS_Store
+
+# Test tooling artifacts
+.coverage
+.pytest_cache/
+.hypothesis/
