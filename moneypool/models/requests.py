@@ -82,7 +82,8 @@ class PaymentConfirmationRequest(Request):
         the next round is ready to be set up.
         """
         if len(self.equb.balance_manager.confirmed_payers()) == self.equb.members.count() - 1:
-            self.equb.balance_manager.setup_next_round()
+            from ..services.settlement_service import setup_next_round
+            setup_next_round(self.equb.balance_manager)
 
 class FriendRequest(Request):
 

@@ -5,6 +5,7 @@ import pytest
 from moneypool.tests.factories import make_full_equb_via_add_member as _make_full_equb
 from moneypool.models import Bid, HighestBid
 from moneypool.services.equb_service import place_bid
+from moneypool.services.settlement_service import setup_next_round
 from moneypool.tasks import select_winner_task
 
 
@@ -18,7 +19,7 @@ class TestSelectWinnerNeverRepeats:
             select_winner_task.now(equb.name)
             equb.refresh_from_db()
             winners.append(equb.balance_manager.latest_winner())
-            equb.balance_manager.setup_next_round()
+            setup_next_round(equb.balance_manager)
             equb.refresh_from_db()
 
         assert len(winners) == 4

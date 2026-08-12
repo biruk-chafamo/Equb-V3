@@ -4,6 +4,7 @@ import pytest
 
 from moneypool.tests.factories import EqubFactory, UserFactory
 from moneypool.services.equb_service import add_member
+from moneypool.services.settlement_service import setup_next_round
 from moneypool.tasks import select_winner_task
 
 
@@ -22,7 +23,7 @@ def test_equb_completes_in_exactly_max_members_rounds(max_members):
         assert equb.is_completed is False
         select_winner_task.now(equb.name)
         equb.refresh_from_db()
-        equb.balance_manager.setup_next_round()
+        setup_next_round(equb.balance_manager)
         equb.refresh_from_db()
         rounds_run += 1
 

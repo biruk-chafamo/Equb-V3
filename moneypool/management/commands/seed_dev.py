@@ -17,6 +17,7 @@ from ...models import (
     Win,
 )
 from ...services.equb_service import add_member, create_equb, place_bid
+from ...services.settlement_service import select_winner, setup_next_round
 
 PASSWORD = "equbtest123"
 CYCLE = datetime.timedelta(days=7)
@@ -187,7 +188,7 @@ class Command(BaseCommand):
             ACTIVE_PAYMENT_STAGE, u["alice"], [u["bob"], u["carol"]], Decimal("600.00")
         )
         place_bid(u["bob"], equb, Decimal("0.150"))
-        equb.balance_manager.select_winner()
+        select_winner(equb.balance_manager)
         equb.refresh_from_db()
 
         manager = equb.balance_manager
@@ -224,8 +225,8 @@ class Command(BaseCommand):
         if bidder is not None:
             place_bid(bidder, equb, amount)
         manager = equb.balance_manager
-        manager.select_winner()
-        manager.setup_next_round()
+        select_winner(manager)
+        setup_next_round(manager)
         equb.refresh_from_db()
 
     def _accept(self, request):

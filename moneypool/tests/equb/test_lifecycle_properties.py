@@ -16,6 +16,7 @@ from moneypool.tests.factories import (
 )
 from moneypool.models import BalanceManager, ServiceChoices
 from moneypool.services.equb_service import add_member, place_bid
+from moneypool.services.settlement_service import setup_next_round
 from moneypool.tasks import select_winner_task
 
 _bids = st.one_of(
@@ -64,7 +65,7 @@ def _run_equb(max_members, amount, bid_plan):
             }
         )
 
-        manager.setup_next_round()
+        setup_next_round(manager)
         equb.refresh_from_db()
 
     return list(equb.members.all()), winners, bids, waiting_counts, awards, deductions

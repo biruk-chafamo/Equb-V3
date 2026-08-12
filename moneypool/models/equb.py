@@ -1,7 +1,6 @@
 import datetime
-import logging
 
-from django.db import models, transaction
+from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 
@@ -182,32 +181,6 @@ class BalanceManager(models.Model):
     def latest_winner(self):
         return self.wins.first().user if self.wins.exists() else None
     
-    def select_winner(self):
-        """
-        Selects highest bidder as winner.
-        If there is no bid, winner is randomly selected from
-        those who haven't received their equbs yet
-        """
-        with transaction.atomic(): # to ensure payment stage is not started without a winner
-            self.equb.is_in_payment_stage = True
-            self.equb.save()
-
-            current_round = self.finished_rounds + 1
-            highest_bid = self.equb.highest_bids.get(round=current_round)
-            all_members = self.equb.members.all()
-            received = self.received.all()
-            not_received = all_members.difference(received)
-            logging.info(f'{not_received.count()} member have not won yet')
-
-            if not_received:
-                highest_bidder = highest_bid.bid.user if highest_bid.bid else None
-                winning_user = settlement.pick_winner(highest_bidder, list(not_received))
-                win = Win.objects.create(user=winning_user, round=current_round)
-                self.wins.add(win)
-                logging.info(f'{win.user.username} won round {current_round}')
-                self.received.add(win.user)
-                return win.user
-
     def calculate_winners_award(self, round):
         equb = self.equb
         highest_bid = equb.highest_bids.get(round=round)
@@ -231,25 +204,3 @@ class BalanceManager(models.Model):
             equb.amount, equb.max_members, bid_amount,
             in_not_received=member in not_received,
         )
-
-    def setup_next_round(self):
-        self.equb.is_in_payment_stage = False
-        self.equb.save()
-        
-        self.finished_rounds += 1
-        self.last_managed = timezone.now()
-        self.save()
-        
-        if self.equb.max_members == self.finished_rounds:
-            self.equb.is_completed = True
-            self.equb.end_date = timezone.now()
-            self.equb.save()
-        else:
-            from ..adapters.system_clock import default_clock
-            from .bidding import HighestBid
-            self.current_round_start_date = default_clock.now()
-            self.save()
-            HighestBid.objects.create(equb=self.equb, round=self.finished_rounds + 1)
-
-            from ..adapters.django_notifier import default_notifier
-            default_notifier.round_advanced(self.equb)

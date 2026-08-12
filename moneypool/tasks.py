@@ -5,6 +5,7 @@ from .models import Equb
 @background()
 def select_winner_task(equb_name):
     equb = Equb.objects.get(name=equb_name)
-    equb.balance_manager.select_winner()
+    from .services.settlement_service import select_winner
+    select_winner(equb.balance_manager)
     
     

@@ -7,6 +7,7 @@ import pytest
 
 from moneypool.tests.factories import EqubFactory, UserFactory, make_full_equb_via_add_member as _make_full_equb
 from moneypool.services.equb_service import place_bid
+from moneypool.services.settlement_service import setup_next_round
 from moneypool.tasks import select_winner_task
 
 
@@ -62,7 +63,7 @@ class TestBidValidationRemainingBranches:
         place_bid(members[0], equb, Decimal("0.900"))
         select_winner_task.now(equb.name)
         equb.refresh_from_db()
-        equb.balance_manager.setup_next_round()
+        setup_next_round(equb.balance_manager)
         equb.refresh_from_db()
         assert equb.balance_manager.current_round() == equb.max_members  # final round
 
