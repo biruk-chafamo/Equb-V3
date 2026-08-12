@@ -39,7 +39,24 @@ This starts:
 
 - Django API server (port 8000)
 - PostgreSQL database
+- Redis (channel layer backing the WebSocket consumers)
 - Background task processor
+
+### Seeding test data
+
+Fills the database with 8 users and 6 equbs covering every lifecycle state
+(pending, active, final round, payment stage, completed) plus friendships and
+pending requests. Sign in as `alice`; every user's password is `equbtest123`.
+
+```bash
+python Equb/manage.py seed_dev          # reset, then rebuild
+python Equb/manage.py seed_dev --reset  # wipe seed data
+python Equb/manage.py seed_dev --list   # describe the cast, change nothing
+```
+
+Re-run any time to get back to a clean state; it only deletes what it created.
+Outside Docker, set `POSTGRES_HOST` and `REDIS_URL` (Redis is required — creating
+an equb publishes a live update through the channel layer).
 
 ## Related
 
