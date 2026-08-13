@@ -1,9 +1,13 @@
-name: Backend tests
+name: ci
 
 on:
   push:
     branches: [main]
   pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   test:
@@ -58,3 +62,28 @@ jobs:
 
       - name: Run tests
         run: pytest --cov=moneypool --cov-report=term-missing
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # heroku rejects shallow clones, so fetch the full history
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          if [ -z "$HEROKU_API_KEY" ]; then
+            echo "HEROKU_API_KEY is not set" >&2
+            exit 1
+          fi
+
+          git push --force \
+            "https://heroku:$HEROKU_API_KEY@git.heroku.com/equb-finance.git" \
+            HEAD:refs/heads/main
