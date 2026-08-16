@@ -19,6 +19,9 @@ class Bid(models.Model):
 
     class Meta:
         ordering = ['-round', '-amount']
+        indexes = [
+            models.Index(fields=['equb', 'round']),
+        ]
 
     def __str__(self):
         return str(self.user.username) + ' to ' + str(self.equb.name) + ' round ' + str(self.round) + ' ' + str(self.amount)
@@ -55,3 +58,8 @@ class HighestBid(models.Model):
     bid = models.OneToOneField(to=Bid, on_delete=models.SET_NULL, null=True, blank=True)
     round = models.PositiveIntegerField()
     winner = models.ForeignKey(to=User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['equb', 'round'], name='unique_equb_round_highest_bid'),
+        ]

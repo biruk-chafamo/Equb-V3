@@ -26,6 +26,9 @@ class Equb(models.Model):
 
     class Meta:
         ordering = ['-creation_date']
+        indexes = [
+            models.Index(fields=['creation_date']),
+        ]
 
     def __str__(self):
         return f"{self.creator.username  if self.creator else 'deleted user'}'s {self.name}"
@@ -57,6 +60,9 @@ class EqubMembership(models.Model):
 
     class Meta:
         ordering = ['-date_joined']
+        constraints = [
+            models.UniqueConstraint(fields=['equb', 'member'], name='unique_equb_member'),
+        ]
 
 class Win(models.Model):
     user = models.ForeignKey(to=User, on_delete=models.CASCADE)
@@ -65,6 +71,9 @@ class Win(models.Model):
 
     class Meta:
         ordering = ['-round']
+        indexes = [
+            models.Index(fields=['round']),
+        ]
 
     def __str__(self):
         return str(self.user.username) + ' won round ' + str(self.round)

@@ -76,6 +76,11 @@ class PaymentConfirmationRequest(Request):
     round = models.IntegerField(default=1)
     message = models.TextField(blank=True)
 
+    class Meta(Request.Meta):
+        indexes = [
+            models.Index(fields=['equb', 'round']),
+        ]
+
     def accept(self):
         """
         If all loosers' payments have been confirmed by the winner,

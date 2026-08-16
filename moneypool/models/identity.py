@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.functions import Upper
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
@@ -32,6 +33,9 @@ class User(AbstractUser):
             models.Index(fields=['first_name']),
             models.Index(fields=['last_name']),
             models.Index(fields=['username']),
+            # the Upper() form serves the iexact lookups
+            models.Index(fields=['email']),
+            models.Index(Upper('email'), name='user_email_upper_idx'),
         ]
 
 class ServiceChoices(models.TextChoices):
@@ -62,6 +66,10 @@ class Friendship(models.Model):
 
     class Meta:
         ordering = ['-date_joined']
+        constraints = [
+            # symmetrical M2M writes both directions; this forbids only exact repeats
+            models.UniqueConstraint(fields=['user', 'friend'], name='unique_friendship'),
+        ]
 
     # TODO removing friend
 
