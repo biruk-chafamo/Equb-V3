@@ -9,10 +9,12 @@ from .identity import (
     FriendshipSerializer,
     GoogleAuthSerializer,
     ListUserSerializer,
+    NestedUserSerializer,
     PaymentMethodSerializer,
     RegisterUserSerializer,
+    WinnerUserSerializer,
 )
-from .equb import EqubSerializer
+from .equb import EqubSerializer, EqubSummarySerializer
 from .bidding import BidSerializer
 from .requests import (
     AcceptEqubInviteRequestSerializer,
@@ -38,12 +40,15 @@ __all__ = [
     "EqubInviteRequestSerializer",
     "EqubJoinRequestSerializer",
     "EqubSerializer",
+    "EqubSummarySerializer",
     "FriendRequestSerializer",
     "FriendshipSerializer",
     "GoogleAuthSerializer",
     "ListPaymentConfirmationRequestSerializer",
     "ListUserSerializer",
+    "NestedUserSerializer",
     "PaymentConfirmationRequestSerializer",
     "PaymentMethodSerializer",
     "RegisterUserSerializer",
+    "WinnerUserSerializer",
 ]

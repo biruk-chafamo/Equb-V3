@@ -86,6 +86,23 @@ class PaymentMethodSerializer(serializers.HyperlinkedModelSerializer):
         fields = ['id', 'url', 'user', 'service', 'detail']
         read_only_fields = ['id', 'user']
 
+class NestedUserSerializer(serializers.ModelSerializer):
+    """A user as it appears inside another resource."""
+
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'score', 'profile_picture']
+
+
+class WinnerUserSerializer(NestedUserSerializer):
+    """The round winner, who also exposes their payment methods."""
+
+    selected_payment_methods = PaymentMethodSerializer(many=True, read_only=True)
+
+    class Meta(NestedUserSerializer.Meta):
+        fields = NestedUserSerializer.Meta.fields + ['selected_payment_methods']
+
+
 class ListUserSerializer(serializers.HyperlinkedModelSerializer):
     selected_payment_methods = PaymentMethodSerializer(many=True, read_only=True)
     joined_equbs = serializers.PrimaryKeyRelatedField(many=True, read_only=True)

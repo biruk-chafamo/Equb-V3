@@ -8,7 +8,7 @@ from django.core.files.base import ContentFile
 
 from ...models import *
 from ...domain import validation
-from .identity import ListUserSerializer, PaymentMethodSerializer
+from .identity import NestedUserSerializer, PaymentMethodSerializer
 
 
 class AddressPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerializer):
@@ -17,7 +17,7 @@ class AddressPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSe
         fields = ['id', 'url', 'sender', 'receiver', 'equb', 'round', 'payment_method', 'message', 'is_accepted', 'is_rejected', 'creation_date']
         read_only_fields = ['id', 'sender', 'receiver', 'equb', 'round', 'payment_method', 'message', 'creation_date']
     
-    sender = ListUserSerializer(read_only=True)
+    sender = NestedUserSerializer(read_only=True)
     payment_method = PaymentMethodSerializer(read_only=True)
 
     def validate(self, attrs):
@@ -27,7 +27,7 @@ class AddressPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSe
 
 class ListPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerializer):
 
-    sender = ListUserSerializer(read_only=True)
+    sender = NestedUserSerializer(read_only=True)
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
@@ -40,7 +40,7 @@ class ListPaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSeria
         read_only_fields = ['id', 'sender', 'receiver', 'is_accepted', 'is_rejected', 'creation_date']
 
 class PaymentConfirmationRequestSerializer(serializers.HyperlinkedModelSerializer):
-    sender = ListUserSerializer(read_only=True)
+    sender = NestedUserSerializer(read_only=True)
 
     def to_representation(self, instance):
         response = super().to_representation(instance)

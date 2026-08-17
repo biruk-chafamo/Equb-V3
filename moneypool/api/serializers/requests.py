@@ -8,15 +8,15 @@ from django.core.files.base import ContentFile
 
 from ...models import *
 from ...domain import validation
-from .equb import EqubSerializer
-from .identity import ListUserSerializer
+from .equb import EqubSummarySerializer
+from .identity import NestedUserSerializer
 
 
 class EqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
         return response
     
     def validate(self, attrs):
@@ -39,8 +39,8 @@ class AcceptEqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
-        response['equb'] = EqubSerializer(instance.equb, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
+        response['equb'] = EqubSummarySerializer(instance.equb, context=self.context).data
         return response
     class Meta:
         model = EqubJoinRequest
@@ -52,8 +52,8 @@ class EqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
 
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
-        response['equb'] = EqubSerializer(instance.equb, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
+        response['equb'] = EqubSummarySerializer(instance.equb, context=self.context).data
         return response
     
     def validate(self, attrs):
@@ -84,8 +84,8 @@ class AcceptEqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
     
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
-        response['equb'] = EqubSerializer(instance.equb, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
+        response['equb'] = EqubSummarySerializer(instance.equb, context=self.context).data
         return response
     
     class Meta:
@@ -97,8 +97,8 @@ class AcceptEqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
 class FriendRequestSerializer(serializers.HyperlinkedModelSerializer):
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
-        response['sender'] = ListUserSerializer(instance.sender, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
+        response['sender'] = NestedUserSerializer(instance.sender, context=self.context).data
         return response
     
     def validate(self, attrs):
@@ -121,8 +121,8 @@ class FriendRequestSerializer(serializers.HyperlinkedModelSerializer):
 class AcceptFriendRequestSerializer(serializers.HyperlinkedModelSerializer):
     def to_representation(self, instance):
         response = super().to_representation(instance)
-        response['receiver'] = ListUserSerializer(instance.receiver, context=self.context).data
-        response['sender'] = ListUserSerializer(instance.sender, context=self.context).data
+        response['receiver'] = NestedUserSerializer(instance.receiver, context=self.context).data
+        response['sender'] = NestedUserSerializer(instance.sender, context=self.context).data
         return response
     class Meta:
         model = FriendRequest

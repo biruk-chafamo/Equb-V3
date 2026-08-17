@@ -30,6 +30,11 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
 
     serializer_class = EqubSerializer
 
+    def get_serializer_class(self):
+        if self.action in {'retrieve', 'create', 'update', 'partial_update'}:
+            return EqubSerializer
+        return EqubSummarySerializer
+
     def get_queryset(self):
         user = self.request.user
         joined_equbs = user.joined_equbs.all()
