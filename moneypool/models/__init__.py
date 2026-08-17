@@ -27,6 +27,7 @@ from .equb import (
     BalanceManager,
     Equb,
     EqubMembership,
+    JoinApprovalPolicy,
     Win,
 )
 from .bidding import (
@@ -36,6 +37,7 @@ from .bidding import (
 from .requests import (
     EqubInviteRequest,
     EqubJoinRequest,
+    EqubJoinRequestVote,
     FriendRequest,
     PaymentConfirmationRequest,
     Request,
@@ -57,10 +59,12 @@ __all__ = [
     "Equb",
     "EqubInviteRequest",
     "EqubJoinRequest",
+    "EqubJoinRequestVote",
     "EqubMembership",
     "FriendRequest",
     "Friendship",
     "HighestBid",
+    "JoinApprovalPolicy",
     "MaxValueValidator",
     "MinValueValidator",
     "NewEqubNotification",

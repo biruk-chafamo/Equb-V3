@@ -4,8 +4,14 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 
-from ..domain import settlement
+from ..domain import approval, settlement
 from .identity import User
+
+
+class JoinApprovalPolicy(models.TextChoices):
+    MAJORITY = approval.MAJORITY, 'Majority of members'
+    CREATOR_ONLY = approval.CREATOR_ONLY, 'Creator only'
+    UNANIMOUS = approval.UNANIMOUS, 'All members'
 
 
 class Equb(models.Model):
@@ -23,6 +29,9 @@ class Equb(models.Model):
     is_active = models.BooleanField(default=False)
     is_completed = models.BooleanField(default=False)
     is_in_payment_stage = models.BooleanField(default=False)
+    join_approval_policy = models.CharField(
+        max_length=20, choices=JoinApprovalPolicy.choices, default=JoinApprovalPolicy.MAJORITY
+    )
 
     class Meta:
         ordering = ['-creation_date']
