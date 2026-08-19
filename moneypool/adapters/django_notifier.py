@@ -51,6 +51,12 @@ class DjangoNotifier:
             payment_confirmation_request=payment_confirmation_request
         )
 
+    def join_request_created(self, join_request):
+        self.live_updates.equb_updated(join_request.equb_id)
+
+    def join_request_voted(self, join_request):
+        self.live_updates.equb_updated(join_request.equb_id)
+
     def _schedule_next_round(self, equb):
         self.scheduler.schedule_winner_selection(equb.name, self.clock.now() + equb.cycle)
 
