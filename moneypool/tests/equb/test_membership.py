@@ -1,5 +1,6 @@
 from django.urls import reverse
 from rest_framework import status
+from rest_framework.serializers import ValidationError
 
 import pytest
 
@@ -207,3 +208,25 @@ class TestEqubJoinRequest:
     def test_consensus_required_for_approving_join_request(self, make_authed_client):
         #TODO: implement feature
         pass
+
+
+@pytest.mark.django_db
+class TestEqubCapacity:
+    def test_add_member_refuses_a_full_equb(self):
+        equb = EqubFactory(max_members=2)
+        add_member(equb, UserFactory())
+        equb.refresh_from_db()
+        assert equb.is_active is True
+
+        with pytest.raises(ValidationError):
+            add_member(equb, UserFactory())
+        assert equb.members.count() == 2
+
+    def test_a_second_approval_cannot_overfill_a_filled_equb(self):
+        equb = EqubFactory(max_members=3)
+        equb.members.add(UserFactory(), UserFactory())
+        assert equb.is_active is False
+
+        with pytest.raises(ValidationError):
+            add_member(equb, UserFactory())
+        assert equb.members.count() == 3
