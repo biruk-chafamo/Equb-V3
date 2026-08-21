@@ -28,6 +28,42 @@ class EqubSummarySerializer(serializers.ModelSerializer):
     time_left_till_next_round = serializers.SerializerMethodField(method_name='get_time_left_till_next_round')
     current_user_is_member = serializers.SerializerMethodField(method_name='get_current_user_is_member')
 
+    def _memo(self, equb, key, compute):
+        """Derive a value once per equb per request."""
+        cache = equb.__dict__.setdefault('_serializer_memo', {})
+        if key not in cache:
+            cache[key] = compute()
+        return cache[key]
+
+    def _current_round(self, equb):
+        return self._memo(equb, 'current_round', equb.balance_manager.current_round)
+
+    def _highest_bid(self, equb):
+        """The current round's HighestBid row."""
+        def find():
+            target = self._current_round(equb)
+            for highest_bid in equb.highest_bids.all():
+                if highest_bid.round == target:
+                    return highest_bid
+            return None
+        return self._memo(equb, 'highest_bid', find)
+
+    def _latest_winner(self, equb):
+        return self._memo(equb, 'latest_winner', equb.balance_manager.latest_winner)
+
+    def _round_requests(self, equb):
+        """This round's payment confirmation requests, fetched once."""
+        return self._memo(
+            equb, 'round_requests', equb.balance_manager.round_payment_requests
+        )
+
+    def _payers(self, equb, kind):
+        return self._memo(
+            equb,
+            kind,
+            lambda: getattr(equb.balance_manager, kind)(self._round_requests(equb)),
+        )
+
     def get_current_user_is_member(self, equb):
         # reads the prefetch cache; .exists() would defeat it
         return self.context.get('request').user in equb.members.all()
@@ -36,16 +72,16 @@ class EqubSummarySerializer(serializers.ModelSerializer):
         return equb.balance_manager.time_left_till_next_round()
 
     def get_current_round(self, equb):
-        return equb.balance_manager.current_round()
+        return self._current_round(equb)
 
     def get_current_award(self, equb):
         balace_manager = equb.balance_manager
         return settlement_service.calculate_winners_award(balace_manager, balace_manager.current_round())
 
     def get_current_highest_bid(self, equb):
-        highest_bid = HighestBid.objects.get(equb=equb, round=equb.balance_manager.current_round()).bid
-        if highest_bid:
-            return highest_bid.amount
+        highest_bid = self._highest_bid(equb)
+        if highest_bid is not None and highest_bid.bid:
+            return highest_bid.bid.amount
         return 0
 
     def get_percent_joined(self, equb):
@@ -59,21 +95,21 @@ class EqubSummarySerializer(serializers.ModelSerializer):
 
     def get_user_payment_status(self, equb):
         user = self.context.get('request').user
-        current_winner = equb.balance_manager.latest_winner()
+        current_winner = self._latest_winner(equb)
 
         if user == current_winner:
             return 'winner'
-        elif user in equb.balance_manager.confirmed_payers():
+        elif user in self._payers(equb, 'confirmed_payers'):
             return 'confirmed'
-        elif user in equb.balance_manager.unconfirmed_payers():
+        elif user in self._payers(equb, 'unconfirmed_payers'):
             return 'unconfirmed'
-        elif user in equb.balance_manager.rejected_payers():
+        elif user in self._payers(equb, 'rejected_payers'):
             return 'rejected'
         else:
             return 'unpaid'
 
     def get_latest_winner(self, equb):
-        latest_winner = equb.balance_manager.latest_winner()
+        latest_winner = self._latest_winner(equb)
         if latest_winner:
             return WinnerUserSerializer(latest_winner, context=self.context).data
         return None
@@ -120,22 +156,26 @@ class EqubSerializer(EqubSummarySerializer):
         return equb.balance_manager.payment_collection_dates()
 
     def get_current_highest_bidder_id(self, equb):
-        highest_bid = HighestBid.objects.get(equb=equb, round=equb.balance_manager.current_round()).bid
-        if highest_bid:
-            return highest_bid.user_id
+        highest_bid = self._highest_bid(equb)
+        if highest_bid is not None and highest_bid.bid:
+            return highest_bid.bid.user_id
         return None
 
     def get_rejected_payer_ids(self, equb):
-        return [user.id for user in equb.balance_manager.rejected_payers()]
+        return [user.id for user in self._payers(equb, 'rejected_payers')]
 
     def get_unconfirmed_payer_ids(self, equb):
-        return [user.id for user in equb.balance_manager.unconfirmed_payers()]
+        return [user.id for user in self._payers(equb, 'unconfirmed_payers')]
 
     def get_confirmed_payer_ids(self, equb):
-        return [user.id for user in equb.balance_manager.confirmed_payers()]
+        return [user.id for user in self._payers(equb, 'confirmed_payers')]
 
     def get_unpaid_member_ids(self, equb):
-        return [user.id for user in equb.balance_manager.unpaid_members()]
+        return [user.id for user in self._memo(
+            equb,
+            'unpaid_members',
+            lambda: equb.balance_manager.unpaid_members(self._round_requests(equb)),
+        )]
 
     class Meta(EqubSummarySerializer.Meta):
         fields = EqubSummarySerializer.Meta.fields + [

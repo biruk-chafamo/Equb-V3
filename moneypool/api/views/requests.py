@@ -19,6 +19,7 @@ from enum import Enum
 from ..serializers import *
 from ...models import *
 from ..permissions import *
+from .equb import EQUB_PREFETCH
 from ...services import equb_service
 from ...adapters.django_notifier import default_notifier
 
@@ -27,7 +28,8 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
 
     def get_queryset(self):
         user = self.request.user
-        return user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()
+        return (user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()) \
+            .select_related('sender', 'receiver', 'equb')
 
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
@@ -40,13 +42,14 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
 
 
 class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
-
     def get_queryset(self):
         user = self.request.user
         equbs = user.joined_equbs.all()
         invites_to_joined_equbs = EqubInviteRequest.objects.filter(equb__in=equbs)
         received = user.received_equbinviterequests.all()
-        return received | invites_to_joined_equbs
+        return (received | invites_to_joined_equbs).select_related(
+            'sender', 'receiver', 'equb', 'equb__balance_manager'
+        ).prefetch_related(*(f'equb__{p}' for p in EQUB_PREFETCH))
 
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
@@ -63,9 +66,12 @@ class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.M
         get equb invitations received by user
         """
         user = self.request.user
-        invitations = user.received_equbinviterequests.filter(is_accepted=False, is_rejected=False, is_expired=False)
         # making sure that the equbs are not active and user has not joined them
-        invitations = [invitation for invitation in invitations if not user.joined_equbs.filter(id=invitation.equb.id).exists()]
+        invitations = (
+            self.get_queryset()
+            .filter(receiver=user, is_accepted=False, is_rejected=False, is_expired=False)
+            .exclude(equb_id__in=user.joined_equbs.values_list('id', flat=True))
+        )
         serializer = self.get_serializer(invitations, many=True)
         return Response(serializer.data)
 
@@ -80,7 +86,7 @@ class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.M
                 {"detail": "Equb is a required parameter."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        invitations = EqubInviteRequest.objects.filter(equb=equb_id)
+        invitations = self.get_queryset().filter(equb=equb_id)
         serializer = self.get_serializer(invitations, many=True)
         return Response(serializer.data)
 

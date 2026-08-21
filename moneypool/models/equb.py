@@ -39,10 +39,6 @@ class Equb(models.Model):
         self.is_active = True
         self.save()
 
-        # freezing all requests or invitations to join this equb
-        map(lambda req: req.freeze_instance(), EqubInviteRequest.objects.filter(equb=self))
-        map(lambda req: req.freeze_instance(), EqubJoinRequest.objects.filter(equb=self))
-        
         # expiring all requests or invitations to join this equb
         EqubInviteRequest.objects.filter(equb=self).update(is_expired=True)
         EqubJoinRequest.objects.filter(equb=self).update(is_expired=True)
@@ -96,20 +92,17 @@ class BalanceManager(models.Model):
         self.save()
 
     def check_received(self, user):
-        received = self.received.all()
-        if user in received:
-            return True
-        else:
-            return False
+        # reads the prefetch cache; .exists() would defeat it
+        return user in self.received.all()
 
     def percent_completed(self):
-        return round((self.finished_rounds / self.equb.max_members) * 100, 2) 
-    
+        return round((self.finished_rounds / self.equb.max_members) * 100, 2)
+
     def percent_joined(self):
-        return round((self.equb.members.all().count() / self.equb.max_members) * 100, 2) 
+        return round((len(self.equb.members.all()) / self.equb.max_members) * 100, 2)
 
     def current_spots(self):
-        return self.equb.max_members - self.equb.members.all().count()
+        return self.equb.max_members - len(self.equb.members.all())
 
     def current_round(self):
         return min(self.finished_rounds + 1, self.equb.max_members)
@@ -137,44 +130,51 @@ class BalanceManager(models.Model):
             }
         return time_delta_dict
 
-    def rejected_payers(self):
+    def round_payment_requests(self):
+        """Every payment confirmation request sent for the current round."""
+        from .requests import PaymentConfirmationRequest
+
+        return list(
+            PaymentConfirmationRequest.objects
+            .filter(equb=self.equb, round=self.current_round())
+            .select_related('sender')
+        )
+
+    def rejected_payers(self, requests=None):
         """
         returns all payment confirmation requests from the previous round that have been rejected
         """
-        from .requests import PaymentConfirmationRequest
+        requests = self.round_payment_requests() if requests is None else requests
+        return [request.sender for request in requests if request.is_rejected]
 
-        return [conf_request.sender for conf_request in PaymentConfirmationRequest.objects.filter(equb=self.equb, round=self.current_round(), is_rejected=True).select_related('sender')]
-
-    def unconfirmed_payers(self):
+    def unconfirmed_payers(self, requests=None):
         """
         returns all payment confirmation requests from the previous round that haven't yet been accepted
         by that round's winner and haven't been rejected
         """
-        from .requests import PaymentConfirmationRequest
+        requests = self.round_payment_requests() if requests is None else requests
+        return [
+            request.sender for request in requests
+            if not request.is_accepted and not request.is_rejected
+        ]
 
-        return [conf_request.sender for conf_request in PaymentConfirmationRequest.objects.filter(equb=self.equb, round=self.current_round(), is_accepted=False, is_rejected=False).select_related('sender')]
-
-    def confirmed_payers(self):
+    def confirmed_payers(self, requests=None):
         """
         inverse of self.unconfirmed_payers
         """
-        from .requests import PaymentConfirmationRequest
+        requests = self.round_payment_requests() if requests is None else requests
+        return [request.sender for request in requests if request.is_accepted]
 
-        return [conf_request.sender for conf_request in PaymentConfirmationRequest.objects.filter(equb=self.equb, round=self.current_round(), is_accepted=True).select_related('sender')]
-
-    def unpaid_members(self):
+    def unpaid_members(self, requests=None):
         """
         returns all members who haven't yet sent a payment confirmation request to the current round's winner
         """
-        from .requests import PaymentConfirmationRequest
-
-        all_members = self.equb.members.all()
-        payment_confirmation_requests = PaymentConfirmationRequest.objects.filter(equb=self.equb, round=self.current_round(), is_rejected=False)
-        payment_confirmation_requested_members = User.objects.filter(pk__in=payment_confirmation_requests.values_list('sender', flat=True))
-        if self.latest_winner():
-            return all_members.exclude(id=self.latest_winner().id).difference(payment_confirmation_requested_members)
-        else:
-            return all_members.difference(payment_confirmation_requested_members)
+        requests = self.round_payment_requests() if requests is None else requests
+        paid_ids = {r.sender_id for r in requests if not r.is_rejected}
+        winner = self.latest_winner()
+        if winner is not None:
+            paid_ids.add(winner.id)
+        return [member for member in self.equb.members.all() if member.id not in paid_ids]
 
     def payment_collection_dates(self):
         """
@@ -187,5 +187,6 @@ class BalanceManager(models.Model):
         return win_dates
 
     def latest_winner(self):
-        return self.wins.first().user if self.wins.exists() else None
+        wins = self.wins.all()
+        return wins[0].user if wins else None
     

@@ -28,7 +28,8 @@ class Request(models.Model):
 
     def save(self, *args, **kwargs):
         if self.pk: # if instance exists
-            addressed_before = self.__class__.objects.get(pk=self.pk).is_accepted or self.__class__.objects.get(pk=self.pk).is_rejected or self.__class__.objects.get(pk=self.pk).is_expired
+            stored = self.__class__.objects.values('is_accepted', 'is_rejected', 'is_expired').get(pk=self.pk)
+            addressed_before = stored['is_accepted'] or stored['is_rejected'] or stored['is_expired']
             if self.is_accepted and not addressed_before:
                 super().save(*args, **kwargs)
                 self.accept()

@@ -30,7 +30,7 @@ class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, v
         user = self.request.user
         received = user.received_paymentconfirmationrequests.all()
         sent = user.sent_paymentconfirmationrequests.all()
-        return received | sent
+        return (received | sent).select_related('sender', 'receiver', 'equb', 'payment_method')
 
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
@@ -68,7 +68,9 @@ class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, v
                 {"detail": "Equb and round are required parameters."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        queryset = PaymentConfirmationRequest.objects.filter(equb=equb_id, round=round, is_rejected=False)
+        queryset = (PaymentConfirmationRequest.objects
+                    .filter(equb=equb_id, round=round, is_rejected=False)
+                    .select_related('sender', 'payment_method'))
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

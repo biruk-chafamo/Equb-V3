@@ -45,7 +45,9 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     users to be viewed or edited.
     """
-    queryset = User.objects.all().order_by('-date_joined')
+    queryset = User.objects.all().order_by('-date_joined').prefetch_related(
+        'selected_payment_methods', 'friends', 'joined_equbs'
+    )
 
     def get_permissions(self):
         if self.request.method in ['GET', 'POST']:
@@ -134,7 +136,9 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             user = self.get_queryset().get(id=id)
 
-        friends = user.friends.all()
+        friends = user.friends.prefetch_related(
+            'selected_payment_methods', 'friends', 'joined_equbs'
+        )
         serializer = self.get_serializer(friends, many=True)
         return Response(serializer.data)
     

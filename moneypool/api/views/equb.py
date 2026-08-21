@@ -23,6 +23,18 @@ from ...services import equb_service
 from ...adapters.django_notifier import default_notifier
 
 
+EQUB_PREFETCH = (
+    'members',
+    'balance_manager__received',
+    'balance_manager__wins__user',
+    'highest_bids__bid__user',
+)
+
+
+def with_related(queryset):
+    return queryset.select_related('balance_manager').prefetch_related(*EQUB_PREFETCH)
+
+
 class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     """
     equbs joined by a user to be viewed or edited.
@@ -41,7 +53,7 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
         recommended_equbs = Equb.objects.filter(id__in=NewEqubNotification.objects.filter(receiver=user, equb__is_active=False).values_list('equb__id', flat=True))
         combined_equbs = joined_equbs | invited_equbs | recommended_equbs
-        return combined_equbs.distinct()
+        return with_related(combined_equbs.distinct())
         
     def perform_create(self, serializer):
         equb = equb_service.create_equb(creator=self.request.user, **serializer.validated_data)
@@ -53,7 +65,7 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         get equbs that user has joined and are active
         """
         user = self.request.user
-        equbs = user.joined_equbs.filter(is_active=True, is_completed=False)
+        equbs = with_related(user.joined_equbs.filter(is_active=True, is_completed=False))
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
     
@@ -63,7 +75,7 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         get equbs that user has joined and are not active but not completed
         """
         user = self.request.user
-        equbs = user.joined_equbs.filter(is_active=False, is_completed=False)
+        equbs = with_related(user.joined_equbs.filter(is_active=False, is_completed=False))
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
 
@@ -73,11 +85,13 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         get equbs that user has been invited to
         """
         user = self.request.user
-        invitations = user.received_equbinviterequests.all()
-        equbs = [invitation.equb for invitation in invitations]
-        # making sure that the equbs are not active and user has not joined them
-        equbs = [equb for equb in equbs if not equb.is_active and not user.joined_equbs.filter(id=equb.id).exists()]
-        equbs = list(set(equbs))
+        equbs = with_related(
+            Equb.objects
+            .filter(id__in=user.received_equbinviterequests.values_list('equb_id', flat=True))
+            .filter(is_active=False)
+            .exclude(id__in=user.joined_equbs.values_list('id', flat=True))
+            .distinct()
+        )
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
     
@@ -87,7 +101,7 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         get equbs that user has completed
         """
         user = self.request.user
-        equbs = user.joined_equbs.filter(is_completed=True)
+        equbs = with_related(user.joined_equbs.filter(is_completed=True))
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
     
@@ -97,8 +111,13 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         get new public equbs that have been created by users friends
         """
         user = self.request.user
-        new_equb_notifications = NewEqubNotification.objects.filter(receiver=user, equb__is_active=False)
-        equbs = [notification.equb for notification in new_equb_notifications]
+        equbs = with_related(
+            Equb.objects.filter(
+                id__in=NewEqubNotification.objects
+                .filter(receiver=user, equb__is_active=False)
+                .values_list('equb_id', flat=True)
+            ).distinct()
+        )
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
    
@@ -120,6 +139,6 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
         shared_private_equbs = user.joined_equbs.filter(is_private=True, members__in=[current_user])
         current_user_invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
         invited_private_equbs = current_user_invited_equbs.filter(is_private=True, members__in=[user])
-        equbs = public_equbs | shared_private_equbs | invited_private_equbs
+        equbs = with_related((public_equbs | shared_private_equbs | invited_private_equbs).distinct())
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)

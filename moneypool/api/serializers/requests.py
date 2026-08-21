@@ -23,7 +23,7 @@ class EqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
         sender = self.context.get('request').user
         equb = attrs.get('equb')
 
-        if validation.is_member(sender, equb.members.all()):
+        if equb.members.filter(pk=sender.pk).exists():
             raise serializers.ValidationError({"receiver": f'You are already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer request to join {equb.name}."})
@@ -66,9 +66,9 @@ class EqubInviteRequestSerializer(serializers.HyperlinkedModelSerializer):
         # TODO: think about how invitations should be handled
         # if sender != equb.creator:
         #     raise serializers.ValidationError({"sender": "Only the equb creator can send an invitation."})
-        if not validation.is_member(sender, equb.members.all()):
+        if not equb.members.filter(pk=sender.pk).exists():
             raise serializers.ValidationError({"sender": f'only members of {equb.name} can send invitations.'})
-        if validation.is_member(receiver, equb.members.all()):
+        if equb.members.filter(pk=receiver.pk).exists():
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already a member of {equb.name}.'})
         if equb.is_active or equb.is_completed:
             raise serializers.ValidationError({"equb": f"You can no longer invite others to join {equb.name}"})
@@ -107,7 +107,7 @@ class FriendRequestSerializer(serializers.HyperlinkedModelSerializer):
 
         if validation.is_self_request(sender, receiver):
             raise serializers.ValidationError({"receiver": f'you cannot send a friend request to yourself.'})
-        if validation.is_member(receiver, sender.friends.all()):
+        if sender.friends.filter(pk=receiver.pk).exists():
             raise serializers.ValidationError({"receiver": f'{receiver.username} is already your friend.'})
         if FriendRequest.objects.filter(sender=sender, receiver=receiver, is_accepted=False, is_expired=False, is_rejected=False).exists():
             raise serializers.ValidationError({"receiver": f'You have already sent a friend request to {receiver.username}.'})

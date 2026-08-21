@@ -23,14 +23,13 @@ def select_winner(manager):
 
         current_round = manager.finished_rounds + 1
         highest_bid = manager.equb.highest_bids.get(round=current_round)
-        all_members = manager.equb.members.all()
-        received = manager.received.all()
-        not_received = all_members.difference(received)
-        logging.info(f'{not_received.count()} member have not won yet')
+        received_ids = set(manager.received.values_list('id', flat=True))
+        not_received = [m for m in manager.equb.members.all() if m.id not in received_ids]
+        logging.info(f'{len(not_received)} member have not won yet')
 
         if not_received:
             highest_bidder = highest_bid.bid.user if highest_bid.bid else None
-            winning_user = settlement.pick_winner(highest_bidder, list(not_received))
+            winning_user = settlement.pick_winner(highest_bidder, not_received)
             win = Win.objects.create(user=winning_user, round=current_round)
             manager.wins.add(win)
             logging.info(f'{win.user.username} won round {current_round}')
@@ -40,9 +39,12 @@ def select_winner(manager):
 
 def calculate_winners_award(manager, round):
     equb = manager.equb
-    highest_bid = equb.highest_bids.get(round=round)
-    bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
-    not_received_count = equb.members.all().difference(manager.received.all()).count()
+    # scanned, not .get(): uses the prefetch cache
+    highest_bid = next((h for h in equb.highest_bids.all() if h.round == round), None)
+    bid_amount = highest_bid.bid.amount if highest_bid is not None and highest_bid.bid else 0
+    # values_list would bypass the prefetch cache
+    received_ids = {member.id for member in manager.received.all()}
+    not_received_count = sum(1 for m in equb.members.all() if m.id not in received_ids)
     return settlement.compute_award(equb.amount, equb.max_members, bid_amount, not_received_count)
 
 
@@ -52,15 +54,12 @@ def calculate_losers_deductions(manager, member, round):
     amount of deduction depends on whether the member has received equb in previous rounds.
     """
     equb = manager.equb
-    all_members = equb.members.all()
-    received = manager.received.all()
-    not_received = all_members.difference(received)
     highest_bid = equb.highest_bids.get(round=round)
     bid_amount = highest_bid.bid.amount if highest_bid.bid else 0
 
     return settlement.compute_deduction(
         equb.amount, equb.max_members, bid_amount,
-        in_not_received=member in not_received,
+        in_not_received=not manager.received.filter(pk=member.pk).exists(),
     )
 
 
