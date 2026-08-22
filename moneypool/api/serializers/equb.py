@@ -27,6 +27,8 @@ class EqubSummarySerializer(serializers.ModelSerializer):
     user_payment_status = serializers.SerializerMethodField(method_name='get_user_payment_status')
     time_left_till_next_round = serializers.SerializerMethodField(method_name='get_time_left_till_next_round')
     current_user_is_member = serializers.SerializerMethodField(method_name='get_current_user_is_member')
+    pending_join_request_count = serializers.SerializerMethodField()
+    current_user_join_request_status = serializers.SerializerMethodField()
 
     def _memo(self, equb, key, compute):
         """Derive a value once per equb per request."""
@@ -63,6 +65,27 @@ class EqubSummarySerializer(serializers.ModelSerializer):
             kind,
             lambda: getattr(equb.balance_manager, kind)(self._round_requests(equb)),
         )
+
+    def _undecided_join_requests(self, equb):
+        # reads the prefetch cache; .filter() would defeat it
+        return self._memo(equb, 'undecided_join_requests', lambda: [
+            join_request for join_request in equb.equbjoinrequests.all()
+            if not (join_request.is_accepted or join_request.is_rejected or join_request.is_expired)
+        ])
+
+    def get_pending_join_request_count(self, equb):
+        if not self.get_current_user_is_member(equb):
+            return 0
+        return len(self._undecided_join_requests(equb))
+
+    def get_current_user_join_request_status(self, equb):
+        user = self.context.get('request').user
+        if any(r.sender_id == user.id for r in self._undecided_join_requests(equb)):
+            return 'pending'
+        rejected = any(
+            r.sender_id == user.id and r.is_rejected for r in equb.equbjoinrequests.all()
+        )
+        return 'rejected' if rejected else 'none'
 
     def get_current_user_is_member(self, equb):
         # reads the prefetch cache; .exists() would defeat it
@@ -122,6 +145,7 @@ class EqubSummarySerializer(serializers.ModelSerializer):
             'current_round', 'current_award', 'current_highest_bid',
             'percent_joined', 'percent_completed',
             'is_won_by_user', 'user_payment_status', 'current_user_is_member',
+            'pending_join_request_count', 'current_user_join_request_status',
             'time_left_till_next_round', 'latest_winner', 'members', 'creator_id',
         ]
 

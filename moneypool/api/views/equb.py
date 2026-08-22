@@ -28,6 +28,7 @@ EQUB_PREFETCH = (
     'balance_manager__received',
     'balance_manager__wins__user',
     'highest_bids__bid__user',
+    'equbjoinrequests',
 )
 
 

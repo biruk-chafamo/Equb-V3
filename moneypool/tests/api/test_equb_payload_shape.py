@@ -14,6 +14,7 @@ SUMMARY_FIELDS = {
     'percent_joined', 'percent_completed', 'is_won_by_user',
     'user_payment_status', 'current_user_is_member',
     'time_left_till_next_round', 'latest_winner', 'members', 'creator_id',
+    'pending_join_request_count', 'current_user_join_request_status',
 }
 
 DETAIL_ONLY_FIELDS = {
