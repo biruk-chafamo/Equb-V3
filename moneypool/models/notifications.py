@@ -4,7 +4,7 @@ from django.utils import timezone
 from .bidding import Bid
 from .equb import Equb
 from .identity import User
-from .requests import assign_notification_perm
+from .requests import assign_notification_perm, grant_change_permission
 
 
 class Notification(models.Model):
@@ -21,6 +21,19 @@ class Notification(models.Model):
     @classmethod
     def notify(cls, *args):
         raise NotImplementedError('must implement notify method for a Notification subclass ')
+
+    @classmethod
+    def notify_many(cls, receivers, **fields):
+        """Create one notification per receiver, in bulk."""
+        receivers = list(receivers)
+        if not receivers:
+            return []
+
+        notifications = cls.objects.bulk_create(
+            [cls(receiver=receiver, **fields) for receiver in receivers]
+        )
+        grant_change_permission(cls, notifications)
+        return notifications
 
     class Meta:
         abstract = True
@@ -41,10 +54,11 @@ class NewRoundNotification(Notification):
 
     @classmethod
     def notify(cls, equb):
-        for member in equb.members.all():
-            cls.objects.create(
-                equb=equb, receiver=member, 
-                round=equb.balance_manager.finished_rounds + 1)
+        cls.notify_many(
+            equb.members.all(),
+            equb=equb,
+            round=equb.balance_manager.finished_rounds + 1,
+        )
 
 
 class NewMemberNotification(Notification):
@@ -55,17 +69,18 @@ class NewMemberNotification(Notification):
 
     @classmethod
     def notify(cls, equb, new_member):
-        members = list(equb.members.all())[:-1]
-        for member in members:  # includes all members except the latest member
-            cls.objects.create(equb=equb, receiver=member, new_member=new_member)
+        cls.notify_many(
+            equb.members.exclude(pk=new_member.pk),
+            equb=equb,
+            new_member=new_member,
+        )
 
 
 class NewEqubNotification(Notification):
     @classmethod
     def notify(cls, equb):
         if not equb.is_private:
-            for friend in equb.creator.friends.all():
-                cls.objects.create(equb=equb, receiver=friend)
+            cls.notify_many(equb.creator.friends.all(), equb=equb)
 
 class NewPaymentConfirmationRequestNotification(Notification):
     @classmethod
@@ -86,9 +101,10 @@ class OutBidNotification(Notification):
 
     @classmethod
     def notify(cls, equb, previous_highest_bid, new_highest_bid):
-        for member in equb.members.all():
-            cls.objects.create(
-                equb=equb, previous_highest_bid=previous_highest_bid, 
-                new_highest_bid=new_highest_bid, receiver=member, 
-                round=equb.balance_manager.finished_rounds + 1
-            )
+        cls.notify_many(
+            equb.members.all(),
+            equb=equb,
+            previous_highest_bid=previous_highest_bid,
+            new_highest_bid=new_highest_bid,
+            round=equb.balance_manager.finished_rounds + 1,
+        )

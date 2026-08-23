@@ -102,3 +102,48 @@ def assign_notification_perm(sender, instance, created, **kwargs):
         perm = sender._meta.model_name
         assign_perm(f'moneypool.change_{sender._meta.model_name}', instance.receiver)
         assign_perm(f'change_{sender._meta.model_name}', instance.receiver, instance)
+
+
+def grant_change_permission(model_class, instances):
+    """Give each instance's receiver change permission on that instance."""
+    from django.contrib.auth.models import Permission
+    from django.contrib.contenttypes.models import ContentType
+    from guardian.utils import get_user_obj_perms_model
+
+    instances = list(instances)
+    if not instances:
+        return
+
+    content_type = ContentType.objects.get_for_model(model_class)
+    permission = Permission.objects.get(
+        content_type=content_type,
+        codename=f'change_{model_class._meta.model_name}',
+    )
+
+    user_permissions = User.user_permissions.through
+    user_permissions.objects.bulk_create(
+        [
+            user_permissions(user_id=receiver_id, permission_id=permission.pk)
+            for receiver_id in {instance.receiver_id for instance in instances}
+        ],
+        ignore_conflicts=True,
+    )
+
+    object_permission = get_user_obj_perms_model(model_class)
+    if not object_permission.objects.is_generic():
+        raise NotImplementedError(
+            'grant_change_permission expects guardian\'s generic object permission model'
+        )
+
+    object_permission.objects.bulk_create(
+        [
+            object_permission(
+                permission=permission,
+                content_type=content_type,
+                object_pk=str(instance.pk),
+                user_id=instance.receiver_id,
+            )
+            for instance in instances
+        ],
+        ignore_conflicts=True,
+    )
