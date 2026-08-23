@@ -10,6 +10,7 @@ from ...models import (
     Equb,
     EqubInviteRequest,
     EqubJoinRequest,
+    EqubJoinRequestVote,
     FriendRequest,
     PaymentConfirmationRequest,
     PaymentMethod,
@@ -149,7 +150,7 @@ class Command(BaseCommand):
         }
 
     def _friendships(self, u):
-        for a, b in (("bob", "alice"), ("carol", "alice"), ("dave", "alice"), ("heidi", "bob")):
+        for a, b in (("bob", "alice"), ("carol", "alice"), ("dave", "alice"), ("heidi", "bob"), ("erin", "bob")):
             self._accept(FriendRequest.objects.create(sender=u[a], receiver=u[b]))
         FriendRequest.objects.create(sender=u["erin"], receiver=u["alice"])
         FriendRequest.objects.create(sender=u["alice"], receiver=u["frank"])
@@ -162,7 +163,10 @@ class Command(BaseCommand):
         add_member(equb, u["bob"])
         EqubInviteRequest.objects.create(sender=u["alice"], receiver=u["carol"], equb=equb)
         EqubInviteRequest.objects.create(sender=u["alice"], receiver=u["grace"], equb=equb)
-        EqubJoinRequest.objects.create(sender=u["erin"], receiver=u["alice"], equb=equb)
+        # erin is trusted by bob but not yet approved; frank is trusted by nobody
+        erin_request = EqubJoinRequest.objects.create(sender=u["erin"], receiver=u["alice"], equb=equb)
+        EqubJoinRequestVote.objects.create(request=erin_request, voter=u["bob"], approve=True)
+        EqubJoinRequest.objects.create(sender=u["frank"], receiver=u["alice"], equb=equb)
 
     def _pending_joinable(self, u):
         equb = create_equb(
@@ -246,9 +250,10 @@ class Command(BaseCommand):
         w("  alice <-> bob, carol, dave        bob <-> heidi")
         w("  pending: erin -> alice, alice -> frank")
         w("  not friends: alice & grace")
+        w("  bob <-> erin (the trust signal on erin's join request)")
         w("\nequbs")
         rows = [
-            (PENDING_PARTIAL, "pending", "alice's, 2/4; invites to carol+grace, join req from erin"),
+            (PENDING_PARTIAL, "pending", "alice's, 2/4; invites to carol+grace, join reqs from erin+frank"),
             (PENDING_JOINABLE, "pending", "grace's, 2/5; alice has an invite to accept"),
             (ACTIVE_MIDWAY, "active", "4 members, round 3/4, open bid"),
             (ACTIVE_FINAL_ROUND, "active", "3 members, round 3/3, bidding disabled"),

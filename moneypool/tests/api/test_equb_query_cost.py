@@ -73,3 +73,26 @@ class TestCostPerEqubInAFeed:
             f'{few_q} queries for 1 equb, {many_q} for 6 '
             f'({per_equb:.1f} per extra equb)'
         )
+
+
+@pytest.mark.django_db
+class TestJoinRequestListingCost:
+    def _measure(self, make_authed_client, members):
+        from moneypool.tests.factories import EqubJoinRequestFactory, make_forming_equb
+
+        equb, joined = make_forming_equb(members + 1, members)
+        requester = UserFactory()
+        joined[0].friends.add(requester)
+        EqubJoinRequestFactory(equb=equb, sender=requester, receiver=equb.creator)
+        client = make_authed_client(joined[0])
+        return _cost(client, reverse('equbjoinrequest-by-equb') + f'?equb={equb.pk}')
+
+    def test_queries_are_flat_in_member_count(self, make_authed_client):
+        small_q, _ = self._measure(make_authed_client, 3)
+        large_q, _ = self._measure(make_authed_client, 20)
+
+        per_member = (large_q - small_q) / 17
+        assert per_member <= MAX_QUERIES_PER_MEMBER, (
+            f'{small_q} queries at 3 members, {large_q} at 20 '
+            f'({per_member:.2f} per extra member)'
+        )

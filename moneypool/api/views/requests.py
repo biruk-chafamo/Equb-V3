@@ -60,8 +60,7 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
         join_request_service.cast_vote(
             join_request, request.user, vote.validated_data['approve']
         )
-        join_request.refresh_from_db()
-        serializer = EqubJoinRequestSerializer(join_request, context=self.get_serializer_context())
+        serializer = self.get_serializer(self.get_queryset().get(pk=join_request.pk))
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='by-equb')

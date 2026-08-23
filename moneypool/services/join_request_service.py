@@ -40,7 +40,8 @@ def cast_vote(
 
 def _tally(join_request, notifier: Notifier) -> None:
     equb = join_request.equb
-    votes = list(join_request.votes.all())
+    # a queryset, not the related manager: the caller's prefetch cache predates this vote
+    votes = EqubJoinRequestVote.objects.filter(request=join_request)
     approvals = sum(1 for vote in votes if vote.approve)
     rejections = len(votes) - approvals
     member_count = equb.members.count()

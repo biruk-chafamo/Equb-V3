@@ -11,6 +11,7 @@ from moneypool.models import (
     Bid,
     FriendRequest,
     EqubJoinRequest,
+    EqubJoinRequestVote,
     EqubInviteRequest,
     PaymentConfirmationRequest,
 )
@@ -89,6 +90,15 @@ class EqubJoinRequestFactory(DjangoModelFactory):
     equb = factory.SubFactory(EqubFactory)
 
 
+class EqubJoinRequestVoteFactory(DjangoModelFactory):
+    class Meta:
+        model = EqubJoinRequestVote
+
+    request = factory.SubFactory(EqubJoinRequestFactory)
+    voter = factory.SubFactory(UserFactory)
+    approve = True
+
+
 class EqubInviteRequestFactory(DjangoModelFactory):
     class Meta:
         model = EqubInviteRequest
@@ -132,3 +142,15 @@ def make_full_equb_via_add_member(max_members):
         members.append(member)
     equb.refresh_from_db()
     return equb, members
+
+
+def make_forming_equb(max_members, members=1):
+    """An equb still taking members, with `members` people already in it."""
+    equb = EqubFactory(max_members=max_members)
+    joined = [equb.creator]
+    for _ in range(members - 1):
+        member = UserFactory()
+        add_member(equb, member)
+        joined.append(member)
+    equb.refresh_from_db()
+    return equb, joined
