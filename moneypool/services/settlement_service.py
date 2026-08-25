@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from ..adapters.django_notifier import default_notifier
@@ -66,19 +67,27 @@ def calculate_losers_deductions(manager, member, round):
 def setup_next_round(
     manager, notifier: Notifier = default_notifier, clock: Clock = default_clock
 ) -> None:
-    manager.equb.is_in_payment_stage = False
-    manager.equb.save()
+    # two callers can advance the same round concurrently
+    with transaction.atomic():
+        locked = manager.__class__.objects.select_for_update().get(pk=manager.pk)
 
-    manager.finished_rounds += 1
-    manager.last_managed = timezone.now()
-    manager.save()
-
-    if manager.equb.max_members == manager.finished_rounds:
-        manager.equb.is_completed = True
-        manager.equb.end_date = timezone.now()
+        manager.equb.is_in_payment_stage = False
         manager.equb.save()
-    else:
-        manager.current_round_start_date = clock.now()
-        manager.save()
-        HighestBid.objects.create(equb=manager.equb, round=manager.finished_rounds + 1)
-        notifier.round_advanced(manager.equb)
+
+        finished_rounds = locked.finished_rounds + 1
+        manager.__class__.objects.filter(pk=manager.pk).update(
+            finished_rounds=F('finished_rounds') + 1,
+            last_managed=timezone.now(),
+        )
+        manager.finished_rounds = finished_rounds
+        manager.refresh_from_db(fields=['last_managed'])
+
+        if manager.equb.max_members == finished_rounds:
+            manager.equb.is_completed = True
+            manager.equb.end_date = timezone.now()
+            manager.equb.save()
+        else:
+            manager.current_round_start_date = clock.now()
+            manager.save()
+            HighestBid.objects.create(equb=manager.equb, round=finished_rounds + 1)
+            notifier.round_advanced(manager.equb)
