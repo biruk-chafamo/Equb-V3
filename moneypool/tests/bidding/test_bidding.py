@@ -119,8 +119,7 @@ class TestBidPermissions:
         client = make_authed_client(outsider)
         response = client.get(reverse("bid-list"))
         assert response.status_code == status.HTTP_200_OK
-        # get_queryset() filters to equbs the user has joined
-        assert response.json() == []
+        assert response.json()["results"] == []
 
     def test_outsider_cannot_delete_a_bid(self, make_authed_client):
         equb, members = _make_full_equb(max_members=2)

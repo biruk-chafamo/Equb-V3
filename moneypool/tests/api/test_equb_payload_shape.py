@@ -100,6 +100,6 @@ class TestUserIsSentOncePerResponse:
             'equb': reverse('equb-detail', args=[equb.pk]),
             'receiver': reverse('user-detail', args=[UserFactory().pk]),
         })
-        body = client.get(reverse('equbinviterequest-list')).json()
+        body = client.get(reverse('equbinviterequest-list')).json()['results']
 
         assert set(body[0]['equb']) == SUMMARY_FIELDS

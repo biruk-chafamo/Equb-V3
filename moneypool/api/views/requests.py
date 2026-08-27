@@ -20,6 +20,7 @@ from ..serializers import *
 from ...models import *
 from ..permissions import *
 from .equb import EQUB_PREFETCH
+from ..pagination import BoundedPagination
 from ...services import equb_service
 from ...adapters.django_notifier import default_notifier
 
@@ -42,6 +43,8 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
 
 
 class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
+    pagination_class = BoundedPagination
+
     def get_queryset(self):
         user = self.request.user
         equbs = user.joined_equbs.all()

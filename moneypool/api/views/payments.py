@@ -19,12 +19,14 @@ from enum import Enum
 from ..serializers import *
 from ...models import *
 from ..permissions import *
+from ..pagination import BoundedPagination
 from ...services import equb_service, settlement_service
 from ...adapters.django_notifier import default_notifier
 
 
 class PaymentConfirmationRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = BoundedPagination
 
     def get_queryset(self):
         user = self.request.user

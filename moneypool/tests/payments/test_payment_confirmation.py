@@ -139,4 +139,4 @@ class TestPaymentConfirmationRequestPermissions:
         client = make_authed_client(outsider)
         response = client.get(reverse("paymentconfirmationrequest-list"))
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        assert response.json()["results"] == []

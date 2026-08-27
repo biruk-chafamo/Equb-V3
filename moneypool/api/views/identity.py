@@ -19,6 +19,7 @@ from enum import Enum
 from ..serializers import *
 from ...models import *
 from ..permissions import *
+from ..pagination import BoundedPagination
 from ...services import equb_service
 from ...adapters.django_notifier import default_notifier
 
@@ -45,6 +46,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     users to be viewed or edited.
     """
+    pagination_class = BoundedPagination
     queryset = User.objects.all().order_by('-date_joined').prefetch_related(
         'selected_payment_methods', 'friends', 'joined_equbs'
     )

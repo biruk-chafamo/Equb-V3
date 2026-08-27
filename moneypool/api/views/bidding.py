@@ -19,6 +19,7 @@ from enum import Enum
 from ..serializers import *
 from ...models import *
 from ..permissions import *
+from ..pagination import BoundedPagination
 from ...services import equb_service
 from ...adapters.django_notifier import default_notifier
 
@@ -29,6 +30,7 @@ class BidViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     """
 
     serializer_class = BidSerializer
+    pagination_class = BoundedPagination
 
     def get_queryset(self):
         equbs = self.request.user.joined_equbs.all()
