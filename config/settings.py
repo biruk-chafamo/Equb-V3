@@ -207,7 +207,7 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_ID_IOS = os.getenv('GOOGLE_CLIENT_ID_IOS')
 GOOGLE_CLIENT_ID_ANDROID = os.getenv('GOOGLE_CLIENT_ID_ANDROID')
 
-USE_S3 = os.getenv('USE_S3', default=True)
+USE_S3 = env_flag('USE_S3', default=True)
 
 if USE_S3:
     DEFAULT_FILE_STORAGE_BACKEND = 'moneypool.storage_backends.PublicMediaStorage'
@@ -236,7 +236,10 @@ if USE_S3:
     
     INSTALLED_APPS.append("storages")
     AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", str)
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    # the CDN in front of the bucket; falls back to the origin when unset
+    AWS_S3_CUSTOM_DOMAIN = os.getenv(
+        "AWS_S3_CUSTOM_DOMAIN", f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
+    )
     AWS_S3_OBJECT_PARAMETERS = { "CacheControl": "max-age=86400"}
     AWS_MEDIA_LOCATION = "media/"
     AWS_STATIC_LOCATION = "static/"
