@@ -27,10 +27,18 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY', default='django-insecure')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', default=True)
+def env_flag(name, default=False):
+    # every non-empty string is truthy, so DEBUG=0 used to mean debug on
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
 
-PROD = os.getenv('PROD', False)
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env_flag('DEBUG')
+
+PROD = env_flag('PROD')
 
 ALLOWED_HOSTS = ['*']
 
