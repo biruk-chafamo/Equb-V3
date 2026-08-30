@@ -1,5 +1,6 @@
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 
 from rest_framework import serializers
 
@@ -8,12 +9,24 @@ from django.core.files.base import ContentFile
 
 from ...models import *
 from ...domain import validation
+from ...domain.images import compress_avatar
+
+
+class CompressedImageField(serializers.ImageField):
+    """An ImageField that stores an avatar-sized JPEG instead of the upload."""
+
+    def to_internal_value(self, data):
+        uploaded = super().to_internal_value(data)
+        uploaded.seek(0)
+        compressed = compress_avatar(uploaded.read())
+        stem = Path(getattr(uploaded, 'name', 'avatar')).stem
+        return ContentFile(compressed, name=f'{stem}.jpg')
 
 
 class RegisterUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
-    profile_picture = serializers.ImageField(required=False, allow_null=True)
+    profile_picture = CompressedImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -117,7 +130,7 @@ class EditUserSerializer(serializers.HyperlinkedModelSerializer):
     selected_payment_methods = PaymentMethodSerializer(many=True, read_only=True)
     joined_equbs = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     friends = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
-    profile_picture = serializers.ImageField(required=False, allow_null=True)
+    profile_picture = CompressedImageField(required=False, allow_null=True)
     class Meta:
         model = User
         fields = ['id', 'url', 'username', 'first_name', 'last_name', 'email', 'bank_account', 'profile_picture', 'score', 'selected_payment_methods', 'friends', 'joined_equbs']
