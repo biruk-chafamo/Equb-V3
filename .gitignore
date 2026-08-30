@@ -16,3 +16,4 @@ credentials/
 .coverage
 .pytest_cache/
 .hypothesis/
+mediafiles/
