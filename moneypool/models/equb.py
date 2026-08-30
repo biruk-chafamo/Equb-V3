@@ -4,14 +4,15 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 
-from ..domain import approval, settlement
+from ..domain import settlement
+from ..domain.approval import JoinApprovalPolicy
 from .identity import User
 
-
-class JoinApprovalPolicy(models.TextChoices):
-    MAJORITY = approval.MAJORITY, 'Majority of members'
-    CREATOR_ONLY = approval.CREATOR_ONLY, 'Creator only'
-    UNANIMOUS = approval.UNANIMOUS, 'All members'
+JOIN_APPROVAL_CHOICES = [
+    (JoinApprovalPolicy.MAJORITY.value, 'Majority of members'),
+    (JoinApprovalPolicy.CREATOR_ONLY.value, 'Creator only'),
+    (JoinApprovalPolicy.UNANIMOUS.value, 'All members'),
+]
 
 
 class Equb(models.Model):
@@ -30,7 +31,7 @@ class Equb(models.Model):
     is_completed = models.BooleanField(default=False)
     is_in_payment_stage = models.BooleanField(default=False)
     join_approval_policy = models.CharField(
-        max_length=20, choices=JoinApprovalPolicy.choices, default=JoinApprovalPolicy.MAJORITY
+        max_length=20, choices=JOIN_APPROVAL_CHOICES, default=JoinApprovalPolicy.MAJORITY.value
     )
 
     class Meta:
@@ -41,6 +42,10 @@ class Equb(models.Model):
 
     def __str__(self):
         return f"{self.creator.username  if self.creator else 'deleted user'}'s {self.name}"
+
+    @property
+    def approval_policy(self) -> JoinApprovalPolicy:
+        return JoinApprovalPolicy(self.join_approval_policy)
 
     def activate(self) -> None:
         from .requests import EqubInviteRequest, EqubJoinRequest

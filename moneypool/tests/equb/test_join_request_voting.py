@@ -3,7 +3,7 @@ from rest_framework import status
 
 import pytest
 
-from moneypool.domain.approval import CREATOR_ONLY, UNANIMOUS
+from moneypool.domain.approval import JoinApprovalPolicy
 from moneypool.models import EqubJoinRequestVote
 from moneypool.tests.factories import (
     EqubJoinRequestFactory,
@@ -106,8 +106,21 @@ class TestMajorityDecides:
 
 @pytest.mark.django_db
 class TestOtherPolicies:
+    def test_the_stored_policy_reads_back_as_the_enum(self, forming):
+        equb, _joined, _requester, _join_request = forming(
+            policy=JoinApprovalPolicy.UNANIMOUS
+        )
+        equb.refresh_from_db()
+
+        assert equb.approval_policy is JoinApprovalPolicy.UNANIMOUS
+
+    def test_a_new_equb_defaults_to_majority(self, forming):
+        equb, _joined, _requester, _join_request = forming()
+
+        assert equb.approval_policy is JoinApprovalPolicy.MAJORITY
+
     def test_unanimous_needs_every_member(self, make_authed_client, forming):
-        equb, joined, requester, join_request = forming(policy=UNANIMOUS)
+        equb, joined, requester, join_request = forming(policy=JoinApprovalPolicy.UNANIMOUS)
 
         members = [m for m in joined if m != equb.creator]
 
@@ -117,7 +130,7 @@ class TestOtherPolicies:
         assert join_request.is_accepted is False
 
     def test_creator_only_ignores_member_votes(self, make_authed_client, forming):
-        equb, joined, requester, join_request = forming(policy=CREATOR_ONLY)
+        equb, joined, requester, join_request = forming(policy=JoinApprovalPolicy.CREATOR_ONLY)
         members = [m for m in joined if m != equb.creator]
 
         for member in members:

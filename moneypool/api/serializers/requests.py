@@ -39,7 +39,7 @@ class EqubJoinRequestSerializer(serializers.HyperlinkedModelSerializer):
 
     def get_required_approvals(self, instance):
         return approval.required_approvals(
-            len(instance.equb.members.all()), instance.equb.join_approval_policy
+            len(instance.equb.members.all()), instance.equb.approval_policy
         )
 
     def get_current_user_vote(self, instance):

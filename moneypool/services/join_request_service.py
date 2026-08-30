@@ -45,7 +45,7 @@ def _tally(join_request, notifier: Notifier) -> None:
     approvals = sum(1 for vote in votes if vote.approve)
     rejections = len(votes) - approvals
     member_count = equb.members.count()
-    policy = equb.join_approval_policy
+    policy = equb.approval_policy
 
     if approval.is_carried(approvals, member_count, policy):
         _settle(join_request, True, notifier)
