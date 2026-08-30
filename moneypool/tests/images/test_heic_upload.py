@@ -1,8 +1,7 @@
 """iPhone photos arrive as HEIC, which nothing in the stack decodes by default."""
 
 import io
-import subprocess
-import tempfile
+from pathlib import Path
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -14,18 +13,14 @@ import pytest
 from moneypool.domain.images import AVATAR_MAX_SIDE, compress_avatar
 from moneypool.tests.factories import UserFactory
 
+# A real portrait HEIC, committed rather than generated: the encoder that makes
+# one is macOS-only, and this has to run on linux CI.
+HEIC = Path(__file__).parent / 'fixtures' / 'portrait.heic'
+
 
 @pytest.fixture(scope='module')
 def heic_bytes():
-    """A real HEIC file, built with the macOS encoder."""
-    with tempfile.TemporaryDirectory() as tmp:
-        source, out = f'{tmp}/src.jpg', f'{tmp}/photo.heic'
-        Image.new('RGB', (3024, 4032), (200, 120, 60)).save(source, 'JPEG', quality=95)
-        result = subprocess.run(['sips', '-s', 'format', 'heic', source, '--out', out],
-                                capture_output=True)
-        if result.returncode != 0:
-            pytest.skip('no HEIC encoder available on this machine')
-        return open(out, 'rb').read()
+    return HEIC.read_bytes()
 
 
 @pytest.fixture
