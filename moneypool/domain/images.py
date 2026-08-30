@@ -1,6 +1,12 @@
 import io
 
+import pillow_heif
 from PIL import Image, ImageOps
+
+# iPhones shoot HEIC by default, and neither Pillow nor any browser decodes it
+# without help. Registering the opener lets Image.open treat it like any other
+# format, which is what turns an unusable upload into a normal one.
+pillow_heif.register_heif_opener()
 
 AVATAR_MAX_SIDE = 512
 AVATAR_QUALITY = 82
