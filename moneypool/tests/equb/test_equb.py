@@ -87,14 +87,22 @@ class TestRetrieveAndUpdateEqub:
 
 @pytest.mark.django_db
 class TestEqubListingActions:
-    def test_by_user_returns_their_public_equbs(self, make_authed_client):
+    def test_by_user_returns_their_public_equbs_to_a_friend(self, make_authed_client):
         owner = UserFactory()
         EqubFactory(creator=owner, is_private=False, name="public_by_user_equb")
-        client = make_authed_client()
-        response = client.get(reverse("equb-by-user"), {"user": owner.pk})
+        friend = UserFactory()
+        friend.friends.add(owner)
+        response = make_authed_client(friend).get(reverse("equb-by-user"), {"user": owner.pk})
         assert response.status_code == status.HTTP_200_OK
         names = [e["name"] for e in response.json()]
         assert "public_by_user_equb" in names
+
+    def test_by_user_hides_them_from_a_stranger(self, make_authed_client):
+        owner = UserFactory()
+        EqubFactory(creator=owner, is_private=False, name="hidden_by_user_equb")
+        response = make_authed_client().get(reverse("equb-by-user"), {"user": owner.pk})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
 
     def test_invited_equbs_lists_pending_invites(self, make_authed_client):
         invitee = UserFactory()

@@ -35,6 +35,15 @@ def with_related(queryset):
     return queryset.select_related('balance_manager').prefetch_related(*EQUB_PREFETCH)
 
 
+def visible_to(user):
+    """Equbs a user may open: their own, ones they were invited to, and public equbs by a friend."""
+    invited = Equb.objects.filter(
+        id__in=user.received_equbinviterequests.values_list('equb__id', flat=True)
+    )
+    friends_public = Equb.objects.filter(is_private=False, creator__in=user.friends.all())
+    return (user.joined_equbs.all() | invited | friends_public).distinct()
+
+
 class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     """
     equbs joined by a user to be viewed or edited.
@@ -49,11 +58,15 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        joined_equbs = user.joined_equbs.all()
+        if getattr(self, 'action', None) == 'list':
+            return with_related(self._feed(user))
+        return with_related(visible_to(user))
+
+    def _feed(self, user):
+        """The home feed: what to surface, which is narrower than what may be opened."""
         invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
         recommended_equbs = Equb.objects.filter(id__in=NewEqubNotification.objects.filter(receiver=user, equb__is_active=False).values_list('equb__id', flat=True))
-        combined_equbs = joined_equbs | invited_equbs | recommended_equbs
-        return with_related(combined_equbs.distinct())
+        return (user.joined_equbs.all() | invited_equbs | recommended_equbs).distinct()
         
     def perform_create(self, serializer):
         equb = equb_service.create_equb(creator=self.request.user, **serializer.validated_data)
@@ -124,8 +137,7 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='by-user')
     def by_user(self, request):
         """
-        get public equbs that a specific user has joined, or the specified user's private 
-        equbs that the current user has access to through invitation or shared membership.
+        get the equbs a specific user has joined that the viewer is allowed to open
         """
         user_id = request.query_params.get('user')
         if not user_id:
@@ -135,10 +147,11 @@ class EqubViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
             )
         user = User.objects.get(id=user_id)
         current_user = self.request.user
-        public_equbs = user.joined_equbs.filter(is_private=False)
-        shared_private_equbs = user.joined_equbs.filter(is_private=True, members__in=[current_user])
-        current_user_invited_equbs = Equb.objects.filter(id__in=user.received_equbinviterequests.values_list('equb__id', flat=True))
-        invited_private_equbs = current_user_invited_equbs.filter(is_private=True, members__in=[user])
-        equbs = with_related((public_equbs | shared_private_equbs | invited_private_equbs).distinct())
+        # only what the viewer could open anyway, so the profile never lists a 404
+        equbs = with_related(
+            visible_to(current_user).filter(
+                id__in=user.joined_equbs.values_list('id', flat=True)
+            )
+        )
         serializer = self.get_serializer(equbs, many=True)
         return Response(serializer.data)
