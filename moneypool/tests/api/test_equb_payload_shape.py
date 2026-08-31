@@ -10,6 +10,7 @@ NESTED_USER_FIELDS = {'id', 'first_name', 'last_name', 'score', 'profile_picture
 SUMMARY_FIELDS = {
     'id', 'name', 'amount', 'max_members', 'cycle', 'creation_date',
     'is_private', 'is_active', 'is_completed', 'is_in_payment_stage',
+    'join_approval_policy',
     'current_round', 'current_award', 'current_highest_bid',
     'percent_joined', 'percent_completed', 'is_won_by_user',
     'user_payment_status', 'current_user_is_member',
