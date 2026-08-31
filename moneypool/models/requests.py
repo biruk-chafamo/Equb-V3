@@ -52,6 +52,22 @@ class EqubJoinRequest(Request):
             raise serializers.ValidationError({"is_accepted": f"{self.equb.name} has already began"})
 
 
+class EqubJoinRequestVote(models.Model):
+    request = models.ForeignKey(to=EqubJoinRequest, on_delete=models.CASCADE, related_name='votes')
+    voter = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='equb_join_request_votes')
+    approve = models.BooleanField()
+    creation_date = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-creation_date']
+        constraints = [
+            models.UniqueConstraint(fields=['request', 'voter'], name='unique_join_request_vote'),
+        ]
+
+    def __str__(self):
+        return f"{self.voter.username} {'approved' if self.approve else 'declined'} join request {self.request_id}"
+
+
 class EqubInviteRequest(Request):
     equb = models.ForeignKey(to=Equb, on_delete=models.CASCADE, related_name='%(class)ss')
 

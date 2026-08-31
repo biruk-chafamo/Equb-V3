@@ -1,5 +1,6 @@
 from django.utils import timezone
 from guardian.shortcuts import assign_perm
+from rest_framework import serializers
 
 from ..adapters.django_notifier import default_notifier
 from ..adapters.system_clock import default_clock
@@ -30,6 +31,9 @@ def create_equb(
 
 
 def add_member(equb, member, notifier: Notifier = default_notifier, clock: Clock = default_clock) -> None:
+    if equb.members.count() >= equb.max_members:
+        raise serializers.ValidationError({"equb": f"{equb.name} is already full"})
+
     equb.members.add(member)
     notifier.member_joined(equb, member)
     if equb.members.count() == equb.max_members:

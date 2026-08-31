@@ -21,16 +21,23 @@ from ...models import *
 from ..permissions import *
 from .equb import EQUB_PREFETCH
 from ..pagination import BoundedPagination
-from ...services import equb_service
+from ...services import equb_service, join_request_service
 from ...adapters.django_notifier import default_notifier
+
+
+JOIN_REQUEST_PREFETCH = ('equb__members', 'sender__friends', 'votes__voter')
 
 
 class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return (user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()) \
-            .select_related('sender', 'receiver', 'equb')
+        equbs = user.joined_equbs.all()
+        requests_to_joined_equbs = EqubJoinRequest.objects.filter(equb__in=equbs)
+        own = user.received_equbjoinrequests.all() | user.sent_equbjoinrequests.all()
+        return (own | requests_to_joined_equbs).distinct() \
+            .select_related('sender', 'receiver', 'equb') \
+            .prefetch_related(*JOIN_REQUEST_PREFETCH)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.request.method in ['PUT', 'PATCH']:
@@ -39,7 +46,50 @@ class EqubJoinRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.Mod
             return EqubJoinRequestSerializer
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user, receiver=serializer.validated_data['equb'].creator)
+        equb = serializer.validated_data['equb']
+        serializer.instance = join_request_service.create_join_request(self.request.user, equb)
+
+    @action(detail=True, methods=['post'], url_path='vote')
+    def vote(self, request, pk=None):
+        """
+        approve or decline a request to join an equb the user is a member of
+        """
+        join_request = self.get_object()
+        vote = EqubJoinRequestVoteSerializer(data=request.data)
+        vote.is_valid(raise_exception=True)
+        join_request_service.cast_vote(
+            join_request, request.user, vote.validated_data['approve']
+        )
+        serializer = self.get_serializer(self.get_queryset().get(pk=join_request.pk))
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='by-equb')
+    def by_equb(self, request):
+        """
+        get undecided requests to join a specific equb
+        """
+        equb_id = request.query_params.get('equb')
+        if not equb_id:
+            return Response(
+                {"detail": "Equb is a required parameter."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        join_requests = self._undecided().filter(equb=equb_id)
+        serializer = self.get_serializer(join_requests, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='pending')
+    def pending(self, request):
+        """
+        get every undecided request to join an equb the user is a member of
+        """
+        user = self.request.user
+        join_requests = self._undecided().filter(equb__in=user.joined_equbs.all())
+        serializer = self.get_serializer(join_requests, many=True)
+        return Response(serializer.data)
+
+    def _undecided(self):
+        return self.get_queryset().filter(is_accepted=False, is_rejected=False, is_expired=False)
 
 
 class EqubInviteRequestViewSet(AuthenticatedAndObjectPermissionMixin, viewsets.ModelViewSet):

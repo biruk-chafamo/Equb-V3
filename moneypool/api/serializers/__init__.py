@@ -22,6 +22,7 @@ from .requests import (
     AcceptFriendRequestSerializer,
     EqubInviteRequestSerializer,
     EqubJoinRequestSerializer,
+    EqubJoinRequestVoteSerializer,
     FriendRequestSerializer,
 )
 from .payments import (
@@ -39,6 +40,7 @@ __all__ = [
     "EditUserSerializer",
     "EqubInviteRequestSerializer",
     "EqubJoinRequestSerializer",
+    "EqubJoinRequestVoteSerializer",
     "EqubSerializer",
     "EqubSummarySerializer",
     "FriendRequestSerializer",
